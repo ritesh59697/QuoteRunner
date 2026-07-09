@@ -3,455 +3,1122 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Quote Runner — Agent Procurement Desk</title>
+<title>Quote Runner</title>
+<link rel="icon" href="/logo.jpg" type="image/jpeg" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('qr-theme');
+      if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
 <style>
-  :root {
-    --ink: #12141C;
-    --panel: #1A1D29;
-    --panel-raised: #21243333;
-    --paper: #F0EDE4;
-    --muted: #8B8FA3;
-    --amber: #E8A33D;
-    --amber-dim: #8A6A32;
-    --teal: #4FD1AE;
-    --line: #2E3244;
-    --danger: #E8664A;
+  :root,
+  [data-theme="dark"] {
+    --bg: #09090b;
+    --bg-elevated: #0f0f12;
+    --surface: #141418;
+    --surface-hover: #1a1a20;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-tertiary: #71717a;
+    --accent: #f59e0b;
+    --accent-soft: rgba(245, 158, 11, 0.12);
+    --accent-border: rgba(245, 158, 11, 0.4);
+    --success: #34d399;
+    --success-soft: rgba(52, 211, 153, 0.1);
+    --success-border: rgba(52, 211, 153, 0.35);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.1);
+    --danger-text: #fca5a5;
+    --info-text: #fcd34d;
+    --fund-title: #fbbf24;
+    --badge-fg: #fbbf24;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --stage-bg: #07060c;
+    --glass: rgba(16, 16, 22, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-border-strong: rgba(255, 255, 255, 0.14);
+    --glass-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --glass-footer: rgba(10, 10, 14, 0.55);
+    --glass-footer-border: rgba(255, 255, 255, 0.06);
+    --topbar-border: rgba(255, 255, 255, 0.08);
+    --topbar-bg: linear-gradient(180deg, rgba(10, 10, 14, 0.4), transparent);
+    --status-bg: rgba(20, 20, 24, 0.88);
+    --callout-bg: rgba(15, 15, 18, 0.85);
+    --metric-bg: #0f0f12;
+    --btn-primary-bg: #fafafa;
+    --btn-primary-fg: #09090b;
+    --btn-primary-hover: #e4e4e7;
+    --logo-ring: rgba(255, 255, 255, 0.1);
+    --logo-glow: rgba(139, 92, 246, 0.4);
+    --icon-btn-bg: rgba(20, 20, 24, 0.75);
+    --icon-btn-hover: rgba(40, 40, 48, 0.9);
+    --noise-opacity: 0.045;
+    --wave-peak: 0.55;
+    --bg-dim:
+      linear-gradient(180deg, rgba(7, 6, 12, 0.55) 0%, rgba(7, 6, 12, 0.42) 40%, rgba(7, 6, 12, 0.72) 100%),
+      radial-gradient(ellipse 70% 55% at 50% 35%, rgba(7, 6, 12, 0.15), rgba(7, 6, 12, 0.78) 100%);
+    --vignette: radial-gradient(ellipse at center, transparent 30%, rgba(7, 6, 12, 0.55) 100%);
+    --focus-glow: 0 0 48px rgba(139, 92, 246, 0.12);
+    color-scheme: dark;
   }
 
-  * { box-sizing: border-box; }
+  [data-theme="light"] {
+    --bg: #f3f1f8;
+    --bg-elevated: #ffffff;
+    --surface: #ffffff;
+    --surface-hover: #f0edf7;
+    --border: #e2deeb;
+    --border-strong: #c9c2d6;
+    --text: #14121c;
+    --text-secondary: #5a5568;
+    --text-tertiary: #8b8499;
+    --accent: #d97706;
+    --accent-soft: rgba(217, 119, 6, 0.12);
+    --accent-border: rgba(217, 119, 6, 0.4);
+    --success: #059669;
+    --success-soft: rgba(5, 150, 105, 0.1);
+    --success-border: rgba(5, 150, 105, 0.28);
+    --danger: #dc2626;
+    --danger-soft: rgba(220, 38, 38, 0.08);
+    --danger-text: #b91c1c;
+    --info-text: #b45309;
+    --fund-title: #b45309;
+    --badge-fg: #b45309;
+    --stage-bg: #e8e4f2;
+    --glass: rgba(255, 255, 255, 0.78);
+    --glass-border: rgba(20, 18, 28, 0.1);
+    --glass-border-strong: rgba(20, 18, 28, 0.16);
+    --glass-shadow: 0 18px 44px rgba(40, 30, 70, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    --glass-footer: rgba(248, 246, 252, 0.88);
+    --glass-footer-border: rgba(20, 18, 28, 0.08);
+    --topbar-border: rgba(20, 18, 28, 0.08);
+    --topbar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent);
+    --status-bg: rgba(255, 255, 255, 0.88);
+    --callout-bg: rgba(255, 255, 255, 0.8);
+    --metric-bg: #f7f5fb;
+    --btn-primary-bg: #14121c;
+    --btn-primary-fg: #ffffff;
+    --btn-primary-hover: #2a2638;
+    --logo-ring: rgba(20, 18, 28, 0.1);
+    --logo-glow: rgba(124, 58, 237, 0.22);
+    --icon-btn-bg: rgba(255, 255, 255, 0.85);
+    --icon-btn-hover: #ffffff;
+    --noise-opacity: 0.03;
+    --wave-peak: 0.38;
+    --bg-dim:
+      linear-gradient(180deg, rgba(243, 241, 248, 0.72) 0%, rgba(243, 241, 248, 0.58) 42%, rgba(243, 241, 248, 0.82) 100%),
+      radial-gradient(ellipse 70% 55% at 50% 35%, rgba(255, 255, 255, 0.25), rgba(243, 241, 248, 0.78) 100%);
+    --vignette: radial-gradient(ellipse at center, transparent 35%, rgba(243, 241, 248, 0.55) 100%);
+    --focus-glow: 0 0 40px rgba(124, 58, 237, 0.1);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    margin: 0;
-    background: var(--ink);
-    color: var(--paper);
-    font-family: 'IBM Plex Sans', sans-serif;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
     min-height: 100vh;
-    background-image:
-      radial-gradient(circle at 15% 0%, rgba(232, 163, 61, 0.06), transparent 40%),
-      radial-gradient(circle at 85% 100%, rgba(79, 209, 174, 0.05), transparent 45%);
-  }
-
-  .wrap {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 48px 24px 96px;
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 20px;
-    margin-bottom: 40px;
-  }
-
-  .wordmark {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 28px;
-    letter-spacing: -0.02em;
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-  }
-
-  .wordmark .dot { color: var(--amber); }
-
-  .eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-top: 4px;
-  }
-
-  .mode-badge {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 6px 12px;
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    color: var(--muted);
-  }
-  .mode-badge.live { color: var(--teal); border-color: var(--teal); }
-  .mode-badge.mock { color: var(--amber); border-color: var(--amber-dim); }
-
-  .desk {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 28px;
-    margin-bottom: 24px;
-  }
-
-  .desk-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--amber);
-    margin-bottom: 14px;
-  }
-
-  textarea {
-    width: 100%;
-    min-height: 90px;
-    background: var(--ink);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    color: var(--paper);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 15px;
-    padding: 14px;
-    resize: vertical;
     line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background 0.25s ease, color 0.2s ease;
   }
-  textarea:focus { outline: none; border-color: var(--amber-dim); }
-  textarea::placeholder { color: var(--muted); }
 
-  .desk-footer {
+  /* —— Real themed artwork + live Ken Burns / crossfade —— */
+  .stage {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: var(--stage-bg);
+  }
+
+  .bg-layer {
+    position: absolute;
+    inset: -8%;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    will-change: transform, opacity;
+  }
+
+  .bg-layer.primary {
+    background-image: url('/bg.jpg');
+    opacity: 1;
+    animation: kenBurnsA 36s ease-in-out infinite alternate;
+  }
+
+  .bg-layer.secondary {
+    background-image: url('/bg-wave.jpg');
+    opacity: 0;
+    animation:
+      kenBurnsB 42s ease-in-out infinite alternate,
+      crossFade 22s ease-in-out infinite;
+  }
+
+  @keyframes kenBurnsA {
+    0%   { transform: scale(1.05) translate(0%, 0%); }
+    50%  { transform: scale(1.14) translate(-1.5%, 1%); }
+    100% { transform: scale(1.1) translate(1.2%, -0.8%); }
+  }
+
+  @keyframes kenBurnsB {
+    0%   { transform: scale(1.12) translate(1%, -1%); }
+    100% { transform: scale(1.06) translate(-1.5%, 1.2%); }
+  }
+
+  @keyframes crossFade {
+    0%, 40%   { opacity: 0; }
+    48%, 88%  { opacity: var(--wave-peak); }
+    100%      { opacity: 0; }
+  }
+
+  .bg-dim {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-dim);
+  }
+
+  .noise {
+    position: absolute;
+    inset: 0;
+    opacity: var(--noise-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: var(--vignette);
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  /* —— Top bar —— */
+  .topbar {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-top: 14px;
-  }
-
-  .hint {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  button.primary {
-    background: var(--amber);
-    color: #1B1400;
-    border: none;
-    border-radius: 4px;
-    padding: 12px 22px;
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: transform 0.1s ease, background 0.15s ease;
-  }
-  button.primary:hover { background: #f3b357; }
-  button.primary:active { transform: scale(0.98); }
-  button.primary:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
-
-  button.ghost {
-    background: transparent;
-    border: 1px solid var(--teal);
-    color: var(--teal);
-    border-radius: 4px;
-    padding: 10px 18px;
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  button.ghost:hover { background: rgba(79, 209, 174, 0.08); }
-  button.ghost:disabled { border-color: var(--line); color: var(--muted); cursor: not-allowed; }
-
-  .task-ledger {
-    display: none;
-    margin-bottom: 24px;
-  }
-  .task-ledger.show { display: block; }
-
-  .ledger-row {
-    display: flex;
     justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px dashed var(--line);
-    font-size: 14px;
+    height: 64px;
+    border-bottom: 1px solid var(--topbar-border);
+    margin-bottom: 40px;
+    backdrop-filter: blur(14px);
+    background: var(--topbar-bg);
   }
-  .ledger-row:last-child { border-bottom: none; }
-  .ledger-key {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .ledger-val { text-align: right; max-width: 60%; }
 
-  .board-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 32px 0 14px;
+  .brand {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    background: #000;
+    box-shadow:
+      0 0 0 1px var(--logo-ring),
+      0 0 22px var(--logo-glow);
+    flex-shrink: 0;
+  }
+
+  .header-actions {
     display: flex;
     align-items: center;
     gap: 10px;
   }
-  .board-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--line);
-  }
 
-  .bid-row {
-    display: grid;
-    grid-template-columns: 28px 1fr auto auto;
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    background: var(--icon-btn-bg);
+    color: var(--text-secondary);
+    display: inline-flex;
     align-items: center;
-    gap: 16px;
-    padding: 16px 18px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    margin-bottom: 10px;
-    opacity: 0;
-    transform: translateY(6px);
-    animation: rise 0.4s ease forwards;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
   }
-  .bid-row.top {
-    border-color: var(--amber-dim);
-    box-shadow: 0 0 0 1px rgba(232, 163, 61, 0.15);
+  .icon-btn:hover {
+    background: var(--icon-btn-hover);
+    color: var(--text);
+    border-color: var(--glass-border-strong);
   }
+  .icon-btn:active { transform: scale(0.96); }
+  .icon-btn svg { width: 18px; height: 18px; display: block; }
+  /* Dark theme: show sun (switch to light). Light theme: show moon (switch to dark). */
+  .icon-btn .icon-sun { display: block; }
+  .icon-btn .icon-moon { display: none; }
+  [data-theme="light"] .icon-btn .icon-sun { display: none; }
+  [data-theme="light"] .icon-btn .icon-moon { display: block; }
 
-  @keyframes rise {
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .rank {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    color: var(--muted);
-    text-align: center;
-  }
-  .bid-row.top .rank { color: var(--amber); }
-
-  .agent-name {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 600;
-    font-size: 15px;
-  }
-  .agent-meta {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 3px;
-  }
-  .stamp {
-    display: inline-block;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--amber);
-    border: 1px solid var(--amber-dim);
-    border-radius: 2px;
-    padding: 2px 6px;
-    margin-left: 8px;
-    transform: rotate(-2deg);
-  }
-
-  .price {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 16px;
-    font-weight: 600;
-    text-align: right;
-  }
-  .eta {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    text-align: right;
-    margin-top: 3px;
-  }
-
-  .score-bar {
-    width: 100%;
-    height: 3px;
-    background: var(--line);
-    border-radius: 2px;
-    margin-top: 8px;
-    overflow: hidden;
-  }
-  .score-bar-fill {
-    height: 100%;
-    background: var(--teal);
-  }
-  .bid-row.top .score-bar-fill { background: var(--amber); }
-
-  .explanation {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    color: var(--paper);
-    background: rgba(232, 163, 61, 0.06);
-    border-left: 2px solid var(--amber);
-    padding: 14px 16px;
-    margin: 20px 0;
-    line-height: 1.6;
-  }
-
-  .approve-bar {
-    display: none;
-    justify-content: flex-end;
-    margin-top: 20px;
-  }
-  .approve-bar.show { display: flex; }
-
-  .escrow-result {
-    display: none;
-    margin-top: 20px;
-    padding: 20px;
-    border: 1px solid var(--teal);
-    border-radius: 6px;
-    background: rgba(79, 209, 174, 0.06);
-  }
-  .escrow-result.show { display: block; }
-  .escrow-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    color: var(--teal);
-    font-size: 16px;
-    margin-bottom: 8px;
-  }
-  .escrow-tx {
-    font-family: 'IBM Plex Mono', monospace;
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     font-size: 12px;
-    color: var(--muted);
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--status-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 11px 5px 9px;
+    backdrop-filter: blur(8px);
   }
 
-  .empty-state {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    color: var(--muted);
-    text-align: center;
-    padding: 40px 0;
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+  }
+  .status-pill.live .status-dot { background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent); }
+  .status-pill.mock .status-dot { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .status-pill.warn .status-dot { background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent); }
+
+  /* —— Hero / compose —— */
+  .hero {
+    margin-bottom: 28px;
   }
 
-  .error-box {
-    display: none;
-    background: rgba(232, 102, 74, 0.08);
-    border: 1px solid var(--danger);
-    color: var(--danger);
-    border-radius: 4px;
-    padding: 14px 16px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    margin-bottom: 20px;
+  .hero h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.25;
+    margin-bottom: 8px;
+    color: var(--text);
   }
-  .error-box.show { display: block; }
+
+  .hero p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    max-width: 42ch;
+  }
+
+  .compose {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    box-shadow: var(--glass-shadow);
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.25s, background 0.2s;
+    backdrop-filter: blur(20px) saturate(1.2);
+  }
+  .compose:focus-within {
+    border-color: var(--accent-border);
+    box-shadow:
+      var(--glass-shadow),
+      0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+      var(--focus-glow);
+  }
+
+  .compose textarea {
+    width: 100%;
+    min-height: 110px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    padding: 18px 18px 8px;
+    resize: vertical;
+    line-height: 1.55;
+  }
+  .compose textarea:focus { outline: none; }
+  .compose textarea::placeholder { color: var(--text-tertiary); }
+
+  .compose-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--glass-footer-border);
+    background: var(--glass-footer);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .chip {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.12s, color 0.12s, background 0.12s;
+  }
+  .chip:hover {
+    border-color: var(--border-strong);
+    color: var(--text);
+    background: var(--surface-hover);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: background 0.12s, opacity 0.12s, border-color 0.12s, transform 0.08s;
+    white-space: nowrap;
+  }
+  .btn:active:not(:disabled) { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
+    padding: 9px 16px;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--btn-primary-hover); }
+
+  .btn-accent {
+    background: var(--accent);
+    color: #1c1200;
+    padding: 10px 18px;
+  }
+  .btn-accent:hover:not(:disabled) { background: #fbbf24; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
 
   .loader {
     display: none;
     align-items: center;
     gap: 10px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
     margin-top: 14px;
+    font-size: 13px;
+    color: var(--text-tertiary);
   }
   .loader.show { display: flex; }
-  .loader-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--amber);
-    animation: pulse 1s infinite ease-in-out;
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
   }
-  .loader-dot:nth-child(2) { animation-delay: 0.15s; }
-  .loader-dot:nth-child(3) { animation-delay: 0.3s; }
-  @keyframes pulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* —— Alerts & funding —— */
+  .alert {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .alert.show { display: block; animation: fadeUp 0.3s ease; }
+  .alert-error {
+    background: var(--danger-soft);
+    border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+    color: var(--danger-text);
+  }
+  .alert-info {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    color: var(--info-text);
+  }
+
+  .fund-banner {
+    display: none;
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    animation: fadeUp 0.35s ease;
+    backdrop-filter: blur(12px);
+  }
+  .fund-banner.show { display: block; }
+
+  .fund-banner-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fund-title);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .fund-banner p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .fund-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .addr-chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* —— Results —— */
+  .results {
+    display: none;
+    margin-top: 32px;
+    animation: fadeUp 0.35s ease;
+  }
+  .results.show { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes bidIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  .task-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(18px) saturate(1.15);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .task-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .metric {
+    background: var(--metric-bg);
+    padding: 12px 14px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+
+  .metric-value {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .metric-value.mono {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  .bid-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .bid {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    color: inherit;
+    font-family: inherit;
+    transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+    opacity: 0;
+    animation: bidIn 0.4s ease forwards;
+    backdrop-filter: blur(16px);
+    box-shadow: var(--glass-shadow);
+  }
+  .bid:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+  }
+  .bid.selected {
+    border-color: var(--accent-border);
+    background: linear-gradient(180deg, var(--accent-soft), var(--glass) 120%);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), var(--glass-shadow);
+  }
+  .bid.recommended:not(.selected) {
+    border-color: var(--border-strong);
+  }
+
+  .bid-rank {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+  }
+  .bid.selected .bid-rank {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+
+  .bid-body { min-width: 0; }
+
+  .bid-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+
+  .bid-name {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--badge-fg);
+    border: 1px solid var(--accent-border);
+  }
+
+  .bid-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .bid-meta strong {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .bid-price { text-align: right; }
+
+  .bid-price .amount {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .bid-price .eta {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+  }
+
+  .score-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+    max-width: 220px;
+  }
+  .score-fill {
+    height: 100%;
+    background: var(--text-tertiary);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .bid.selected .score-fill { background: var(--accent); }
+
+  .callout {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--callout-bg);
+    border: 1px solid var(--glass-border);
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    backdrop-filter: blur(12px);
+  }
+  .callout strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .actions-hint {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .success-card {
+    display: none;
+    margin-top: 16px;
+    padding: 18px;
+    border-radius: var(--radius);
+    background: var(--success-soft);
+    border: 1px solid var(--success-border);
+  }
+  .success-card.show { display: block; animation: fadeUp 0.35s ease; }
+
+  .success-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--success);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .success-tx {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+    word-break: break-all;
+  }
+
+  .empty-bids {
+    padding: 28px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+  }
+
+  @media (max-width: 560px) {
+    .hero h1 { font-size: 22px; }
+    .compose-footer { flex-direction: column; align-items: stretch; }
+    .chips { justify-content: flex-start; }
+    .btn-primary { width: 100%; }
+    .metrics { grid-template-columns: 1fr; }
+    .bid {
+      grid-template-columns: 32px 1fr;
+      gap: 12px;
+    }
+    .bid-price {
+      grid-column: 2;
+      text-align: left;
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+      margin-top: -4px;
+    }
+    .actions { flex-direction: column; align-items: stretch; }
+    .btn-accent { width: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bg-layer { animation: none !important; transform: scale(1.06) !important; }
+    .bg-layer.secondary { opacity: 0 !important; }
+    .bid { animation: none !important; opacity: 1; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <div class="wordmark">QUOTE<span class="dot">·</span>RUNNER</div>
-      <div class="eyebrow">Agent Procurement Desk — built for OKX.AI</div>
-    </div>
-    <div class="mode-badge" id="modeBadge">checking mode…</div>
-  </header>
+  <div class="stage" aria-hidden="true">
+    <div class="bg-layer primary"></div>
+    <div class="bg-layer secondary"></div>
+    <div class="bg-dim"></div>
+    <div class="noise"></div>
+    <div class="vignette"></div>
+  </div>
 
-  <div class="desk">
-    <div class="desk-label">01 — Describe the task</div>
-    <textarea id="taskInput" placeholder="e.g. I need a logo for my coffee brand, budget 20 USDT, need it in 2 days"></textarea>
-    <div class="desk-footer">
-      <div class="hint">Plain language in. Structured task out.</div>
-      <button class="primary" id="submitBtn">Post to Marketplace</button>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Quote Runner home">
+        <img class="brand-logo" src="/logo.jpg?v=2" width="40" height="40" alt="Quote Runner" />
+      </a>
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="themeToggle" aria-label="Switch to light mode" title="Light mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/>
+          </svg>
+        </button>
+        <div class="status-pill" id="modeBadge">
+          <span class="status-dot"></span>
+          <span id="modeLabel">Connecting…</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1>Compare agent quotes, fund the best one.</h1>
+      <p>Describe the work in plain language. We structure the task, match providers, and rank bids on price, reputation, and speed.</p>
+    </section>
+
+    <div class="compose">
+      <textarea id="taskInput" placeholder="e.g. Design a logo for my coffee brand, budget 20 USDT, need it in 2 days" rows="4"></textarea>
+      <div class="compose-footer">
+        <div class="chips" id="exampleChips">
+          <button type="button" class="chip" data-example="Design a logo for a coffee brand, budget 20 USDT, need it in 2 days">Logo design</button>
+          <button type="button" class="chip" data-example="Write a product landing page for a DeFi wallet, 15 USDT, 24 hours">Landing page</button>
+          <button type="button" class="chip" data-example="Translate a 500-word whitepaper from English to Spanish, budget 10 USDT">Translation</button>
+        </div>
+        <button class="btn btn-primary" id="submitBtn">
+          Get quotes
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
     </div>
+
     <div class="loader" id="parseLoader">
-      <div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>
-      <span>Parsing task and collecting bids…</span>
+      <div class="spinner"></div>
+      <span>Parsing task and collecting quotes…</span>
+    </div>
+
+    <div class="fund-banner" id="fundBanner">
+      <div class="fund-banner-title">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5L14.5 13h-13L8 1.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v3.5M8 11.5h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Fund escrow wallet
+      </div>
+      <p id="fundMessage">Live mode needs USDT on XLayer before you can approve a quote.</p>
+      <div class="fund-row">
+        <span class="addr-chip" id="fundAddress" style="display:none;"></span>
+        <button type="button" class="btn btn-ghost" id="copyAddrBtn" style="display:none;">Copy address</button>
+        <button type="button" class="btn btn-ghost" id="refreshFundingBtn">Recheck balance</button>
+      </div>
+    </div>
+
+    <div class="alert alert-error" id="errorBox"></div>
+    <div class="alert alert-info" id="infoBox"></div>
+
+    <div class="results" id="results">
+      <div class="section-label">Structured task</div>
+      <div class="task-card" id="taskLedger">
+        <div class="task-title" id="ledTitle">—</div>
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Category</div>
+            <div class="metric-value" id="ledCategory">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Budget</div>
+            <div class="metric-value mono" id="ledBudget">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Deadline</div>
+            <div class="metric-value mono" id="ledDeadline">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="bidSection" style="display:none;">
+        <div class="section-label">Ranked quotes</div>
+        <div class="bid-list" id="bidBoard"></div>
+        <div class="empty-bids" id="emptyBids" style="display:none;">No matching providers found. Try a different description or category.</div>
+
+        <div class="callout" id="explanation"></div>
+
+        <div class="actions" id="approveBar">
+          <div class="actions-hint" id="selectedHint">Select a quote to fund escrow</div>
+          <button class="btn btn-accent" id="approveBtn" disabled>Approve &amp; fund escrow</button>
+        </div>
+
+        <div class="loader" id="approveLoader">
+          <div class="spinner"></div>
+          <span id="approveLoaderText">Funding escrow…</span>
+        </div>
+
+        <div class="success-card" id="escrowResult">
+          <div class="success-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Escrow funded
+          </div>
+          <div class="success-tx" id="escrowTx"></div>
+        </div>
+      </div>
     </div>
   </div>
-
-  <div class="error-box" id="errorBox"></div>
-
-  <div class="task-ledger" id="taskLedger">
-    <div class="desk-label">02 — Structured task</div>
-    <div class="ledger-row"><span class="ledger-key">Title</span><span class="ledger-val" id="ledTitle"></span></div>
-    <div class="ledger-row"><span class="ledger-key">Category</span><span class="ledger-val" id="ledCategory"></span></div>
-    <div class="ledger-row"><span class="ledger-key">Budget</span><span class="ledger-val" id="ledBudget"></span></div>
-    <div class="ledger-row"><span class="ledger-key">Deadline</span><span class="ledger-val" id="ledDeadline"></span></div>
-  </div>
-
-  <div id="bidSection" style="display:none;">
-    <div class="board-label">03 — Live bids</div>
-    <div id="bidBoard"></div>
-    <div class="explanation" id="explanation"></div>
-    <div class="approve-bar" id="approveBar">
-      <button class="ghost" id="approveBtn">Approve top bid &amp; fund escrow</button>
-    </div>
-    <div class="loader" id="approveLoader">
-      <div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>
-      <span>Funding escrow…</span>
-    </div>
-    <div class="escrow-result" id="escrowResult">
-      <div class="escrow-title">Escrow funded</div>
-      <div class="escrow-tx" id="escrowTx"></div>
-    </div>
-  </div>
-</div>
 
 <script>
   const $ = (id) => document.getElementById(id);
+
   let currentTaskId = null;
-  let currentRecommendedBidId = null;
+  let selectedBidId = null;
+  let currentBids = [];
+  let recommendedBidId = null;
+  let lastFunding = null;
+  let marketplaceMode = 'unknown';
+
+  function getTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  }
+
+  function setTheme(theme) {
+    const next = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('qr-theme', next); } catch (_) {}
+    const btn = $('themeToggle');
+    if (btn) {
+      btn.setAttribute('aria-label', next === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
+      btn.title = next === 'light' ? 'Dark mode' : 'Light mode';
+    }
+  }
+
+  $('themeToggle').addEventListener('click', () => {
+    setTheme(getTheme() === 'light' ? 'dark' : 'light');
+  });
+  setTheme(getTheme());
+
+  function renderFunding(funding) {
+    lastFunding = funding || null;
+    const banner = $('fundBanner');
+    if (!funding || funding.mode === 'mock' || funding.ready) {
+      banner.classList.remove('show');
+      return;
+    }
+
+    $('fundMessage').textContent = funding.message ||
+      'Live mode needs USDT on XLayer before you can approve a quote.';
+
+    const addrEl = $('fundAddress');
+    const copyBtn = $('copyAddrBtn');
+    if (funding.address) {
+      addrEl.style.display = 'inline-block';
+      addrEl.textContent = funding.address;
+      copyBtn.style.display = 'inline-flex';
+    } else {
+      addrEl.style.display = 'none';
+      copyBtn.style.display = 'none';
+    }
+    banner.classList.add('show');
+  }
 
   async function checkStatus() {
+    const badge = $('modeBadge');
+    const label = $('modeLabel');
     try {
       const res = await fetch('/api/status');
       const data = await res.json();
-      const badge = $('modeBadge');
-      badge.textContent = `mode: ${data.marketplace_mode}${data.groq_configured ? '' : ' · GROQ KEY MISSING'}`;
-      badge.className = 'mode-badge ' + (data.marketplace_mode === 'live' ? 'live' : 'mock');
+      marketplaceMode = data.marketplace_mode || 'unknown';
+      badge.className = 'status-pill ' + (marketplaceMode === 'live' ? 'live' : marketplaceMode === 'mock' ? 'mock' : 'warn');
+
+      if (!data.groq_configured) {
+        badge.className = 'status-pill warn';
+        label.textContent = 'Groq key missing';
+      } else if (marketplaceMode === 'live' && data.funding && !data.funding.ready) {
+        badge.className = 'status-pill warn';
+        label.textContent = 'Live · needs USDT';
+        renderFunding(data.funding);
+      } else {
+        label.textContent = marketplaceMode === 'live' ? 'Live marketplace' : marketplaceMode === 'mock' ? 'Mock mode' : marketplaceMode;
+        if (data.funding) renderFunding(data.funding);
+      }
     } catch (e) {
-      $('modeBadge').textContent = 'backend unreachable';
+      badge.className = 'status-pill warn';
+      label.textContent = 'Backend offline';
     }
   }
   checkStatus();
+
+  $('copyAddrBtn').addEventListener('click', async () => {
+    if (!lastFunding?.address) return;
+    try {
+      await navigator.clipboard.writeText(lastFunding.address);
+      $('copyAddrBtn').textContent = 'Copied';
+      setTimeout(() => { $('copyAddrBtn').textContent = 'Copy address'; }, 1500);
+    } catch (_) {
+      showInfo('Address: ' + lastFunding.address);
+    }
+  });
+
+  $('refreshFundingBtn').addEventListener('click', async () => {
+    const bid = currentBids.find((b) => b.bid_id === selectedBidId);
+    const amount = bid ? bid.price_usdt : 0;
+    $('refreshFundingBtn').disabled = true;
+    try {
+      const res = await fetch('/api/funding?amount=' + encodeURIComponent(amount));
+      const data = await res.json();
+      renderFunding(data);
+      if (data.ready) {
+        showInfo(data.message || 'Wallet funded — you can approve now.');
+        updateSelectionUI();
+      } else {
+        hideAlerts();
+      }
+      checkStatus();
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      $('refreshFundingBtn').disabled = false;
+    }
+  });
+
+  document.querySelectorAll('.chip[data-example]').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      $('taskInput').value = chip.dataset.example;
+      $('taskInput').focus();
+    });
+  });
 
   function showError(msg) {
     const box = $('errorBox');
     box.textContent = msg;
     box.classList.add('show');
+    $('infoBox').classList.remove('show');
   }
-  function hideError() { $('errorBox').classList.remove('show'); }
+  function showInfo(msg) {
+    const box = $('infoBox');
+    box.textContent = msg;
+    box.classList.add('show');
+    $('errorBox').classList.remove('show');
+  }
+  function hideAlerts() {
+    $('errorBox').classList.remove('show');
+    $('infoBox').classList.remove('show');
+  }
 
-  $('submitBtn').addEventListener('click', async () => {
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  $('submitBtn').addEventListener('click', submitTask);
+  $('taskInput').addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submitTask();
+  });
+
+  async function submitTask() {
     const input = $('taskInput').value.trim();
     if (!input) return;
-    hideError();
+
+    hideAlerts();
     $('submitBtn').disabled = true;
     $('parseLoader').classList.add('show');
+    $('results').classList.remove('show');
     $('bidSection').style.display = 'none';
-    $('taskLedger').classList.remove('show');
+    $('escrowResult').classList.remove('show');
+    selectedBidId = null;
+    currentBids = [];
+    recommendedBidId = null;
 
     try {
       const res = await fetch('/api/tasks', {
@@ -463,80 +1130,156 @@
       if (!res.ok) throw new Error(data.error || 'Request failed');
 
       renderTask(data.task);
+      $('results').classList.add('show');
+
+      if (data.funding) renderFunding(data.funding);
 
       if (data.needs_clarification) {
-        showError('Task is a bit vague — consider adding: ' + data.task.clarifying_questions.join('; '));
+        showInfo('Needs a bit more detail — ' + data.task.clarifying_questions.join(' · '));
         return;
       }
 
       currentTaskId = data.task_id;
-      currentRecommendedBidId = data.recommended_bid_id;
-      renderBids(data.bids, data.recommended_bid_id);
-      $('explanation').textContent = data.explanation;
+      currentBids = data.bids || [];
+      recommendedBidId = data.recommended_bid_id || (currentBids[0] && currentBids[0].bid_id) || null;
+      selectedBidId = recommendedBidId;
+
       $('bidSection').style.display = 'block';
-      $('approveBar').classList.add('show');
-      $('escrowResult').classList.remove('show');
+      renderBids(currentBids, recommendedBidId);
+      updateSelectionUI();
+
+      const exp = data.explanation || '';
+      $('explanation').innerHTML = exp
+        ? '<strong>Why this ranking.</strong> ' + escapeHtml(exp)
+        : '';
+      $('explanation').style.display = exp ? 'block' : 'none';
+      $('approveBar').style.display = currentBids.length ? 'flex' : 'none';
     } catch (e) {
       showError(e.message);
     } finally {
       $('submitBtn').disabled = false;
       $('parseLoader').classList.remove('show');
     }
-  });
+  }
 
   function renderTask(task) {
     $('ledTitle').textContent = task.title;
-    $('ledCategory').textContent = task.category;
+    $('ledCategory').textContent = capitalize(task.category);
     $('ledBudget').textContent = task.budget_usdt + ' USDT';
-    $('ledDeadline').textContent = task.deadline_hours + 'h';
-    $('taskLedger').classList.add('show');
+    $('ledDeadline').textContent = formatHours(task.deadline_hours);
+  }
+
+  function capitalize(s) {
+    if (!s) return '—';
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function formatHours(h) {
+    if (h == null) return '—';
+    if (h >= 24 && h % 24 === 0) return (h / 24) + 'd';
+    if (h >= 24) return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+    return h + 'h';
   }
 
   function renderBids(bids, recommendedId) {
     const board = $('bidBoard');
+    const empty = $('emptyBids');
     board.innerHTML = '';
+
+    if (!bids || bids.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
     bids.forEach((bid, i) => {
-      const isTop = bid.bid_id === recommendedId;
-      const row = document.createElement('div');
-      row.className = 'bid-row' + (isTop ? ' top' : '');
-      row.style.animationDelay = (i * 0.08) + 's';
-      row.innerHTML = `
-        <div class="rank">${i + 1}</div>
-        <div>
-          <div class="agent-name">${bid.agent_name}${isTop ? '<span class="stamp">recommended</span>' : ''}</div>
-          <div class="agent-meta">${bid.reputation}★ reputation · score ${Math.round(bid.score * 100)}/100</div>
-          <div class="score-bar"><div class="score-bar-fill" style="width:${Math.round(bid.score * 100)}%"></div></div>
+      const isRec = bid.bid_id === recommendedId;
+      const isSel = bid.bid_id === selectedBidId;
+      const scorePct = Math.round((bid.score || 0) * 100);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bid' + (isRec ? ' recommended' : '') + (isSel ? ' selected' : '');
+      btn.style.animationDelay = (i * 0.07) + 's';
+      btn.dataset.bidId = bid.bid_id;
+      btn.innerHTML = `
+        <div class="bid-rank">${i + 1}</div>
+        <div class="bid-body">
+          <div class="bid-name-row">
+            <span class="bid-name">${escapeHtml(bid.agent_name)}</span>
+            ${isRec ? '<span class="badge">Recommended</span>' : ''}
+          </div>
+          <div class="bid-meta">
+            <span><strong>${escapeHtml(String(bid.reputation))}★</strong> reputation</span>
+            <span><strong>${scorePct}</strong> score</span>
+          </div>
+          <div class="score-track"><div class="score-fill" style="width:${scorePct}%"></div></div>
         </div>
-        <div>
-          <div class="price">${bid.price_usdt} USDT</div>
-          <div class="eta">${bid.eta_hours}h ETA</div>
+        <div class="bid-price">
+          <div class="amount">${escapeHtml(String(bid.price_usdt))} USDT</div>
+          <div class="eta">${escapeHtml(formatHours(bid.eta_hours))} ETA</div>
         </div>
-        <div></div>
       `;
-      board.appendChild(row);
+      btn.addEventListener('click', () => {
+        selectedBidId = bid.bid_id;
+        renderBids(currentBids, recommendedId);
+        updateSelectionUI();
+        // re-check funding against selected price
+        if (marketplaceMode === 'live') {
+          fetch('/api/funding?amount=' + encodeURIComponent(bid.price_usdt))
+            .then((r) => r.json())
+            .then(renderFunding)
+            .catch(() => {});
+        }
+      });
+      board.appendChild(btn);
     });
   }
 
+  function updateSelectionUI() {
+    const bid = currentBids.find((b) => b.bid_id === selectedBidId);
+    const approveBtn = $('approveBtn');
+    const hint = $('selectedHint');
+
+    if (!bid) {
+      approveBtn.disabled = true;
+      hint.textContent = 'Select a quote to fund escrow';
+      return;
+    }
+
+    const blocked = lastFunding && lastFunding.mode === 'live' && !lastFunding.ready;
+    approveBtn.disabled = blocked;
+    hint.textContent = blocked
+      ? `Need ~${bid.price_usdt} USDT on XLayer to fund this quote`
+      : `Selected: ${bid.agent_name} · ${bid.price_usdt} USDT`;
+  }
+
   $('approveBtn').addEventListener('click', async () => {
-    if (!currentTaskId || !currentRecommendedBidId) return;
+    if (!currentTaskId || !selectedBidId) return;
     $('approveBtn').disabled = true;
     $('approveLoader').classList.add('show');
-    hideError();
+    $('approveLoaderText').textContent = 'Checking wallet & funding escrow…';
+    hideAlerts();
 
     try {
       const res = await fetch(`/api/tasks/${currentTaskId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bidId: currentRecommendedBidId }),
+        body: JSON.stringify({ bidId: selectedBidId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Approval failed');
+      if (!res.ok) {
+        if (data.funding) renderFunding(data.funding);
+        throw new Error(data.error || 'Approval failed');
+      }
 
       $('escrowTx').textContent = `tx: ${data.escrow_tx || data.task_id} · status: ${data.status}`;
       $('escrowResult').classList.add('show');
-      $('approveBar').classList.remove('show');
+      $('approveBar').style.display = 'none';
+      $('fundBanner').classList.remove('show');
     } catch (e) {
       showError(e.message);
+      $('approveBtn').disabled = false;
+      updateSelectionUI();
     } finally {
       $('approveLoader').classList.remove('show');
     }
