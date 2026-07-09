@@ -16,3 +16,6 @@ yarn-error.log*
 # System files
 .DS_Store
 Thumbs.db
+
+# Public assets (kept local only)
+public/
