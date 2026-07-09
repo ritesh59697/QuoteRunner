@@ -1,0 +1,17 @@
+{
+  "name": "quote-runner",
+  "version": "0.1.0",
+  "description": "Quote Runner - meta-agent that posts tasks to OKX.AI Task Marketplace, ranks bids, and triggers escrow payment on approval.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.7.0",
+    "cors": "^2.8.5"
+  }
+}

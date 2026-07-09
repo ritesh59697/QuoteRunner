@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "skills": {
+    "okx-agent-payments-protocol": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-agent-payments-protocol/SKILL.md",
+      "computedHash": "8f10a1a83bd800b6c3ef8a90921c3e476c9342921a3e707e9c2448034f6689c1"
+    },
+    "okx-agentic-wallet": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-agentic-wallet/SKILL.md",
+      "computedHash": "fa5fd1e02986a8fa5c47c09efe4105432c9b6070188cac5db5ca4e7a25504fa1"
+    },
+    "okx-ai": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-ai/SKILL.md",
+      "computedHash": "11eaf1f924a53a4645b1c3be8d06e81b1a5b71caf4d83b4586d9c50aed26d791"
+    },
+    "okx-dapp-discovery": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dapp-discovery/SKILL.md",
+      "computedHash": "371c1d508cbdae014088288aff87ea73c6592c171b126e35eb98d08e7d8817de"
+    },
+    "okx-defi": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-defi/SKILL.md",
+      "computedHash": "bb5d7cde585856878da40a9f589d0a46f19361a3b8bffc56e5b7b47b398f08c3"
+    },
+    "okx-dex": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex/SKILL.md",
+      "computedHash": "38f493ed28ede93114bf2077fed4bb32d34b36123229f35eb62ceb65735532f9"
+    },
+    "okx-growth-competition": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-growth-competition/SKILL.md",
+      "computedHash": "5444f490b2eb789976877fabe0205d6eee3abc310b2bf36dfc47d637c8e0cb97"
+    },
+    "okx-guide": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-guide/SKILL.md",
+      "computedHash": "b1048f209a7eb568f91df11d5ff8a1f61754d816c61e60607ade77e247c0f074"
+    }
+  }
+}

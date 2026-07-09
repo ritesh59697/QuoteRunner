@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quote Runner — Agent Procurement Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #12141C;
+    --panel: #1A1D29;
+    --panel-raised: #21243333;
+    --paper: #F0EDE4;
+    --muted: #8B8FA3;
+    --amber: #E8A33D;
+    --amber-dim: #8A6A32;
+    --teal: #4FD1AE;
+    --line: #2E3244;
+    --danger: #E8664A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(232, 163, 61, 0.06), transparent 40%),
+      radial-gradient(circle at 85% 100%, rgba(79, 209, 174, 0.05), transparent 45%);
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+    margin-bottom: 40px;
+  }
+
+  .wordmark {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .wordmark .dot { color: var(--amber); }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .mode-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    color: var(--muted);
+  }
+  .mode-badge.live { color: var(--teal); border-color: var(--teal); }
+  .mode-badge.mock { color: var(--amber); border-color: var(--amber-dim); }
+
+  .desk {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .desk-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 14px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 90px;
+    background: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    color: var(--paper);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    padding: 14px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  textarea:focus { outline: none; border-color: var(--amber-dim); }
+  textarea::placeholder { color: var(--muted); }
+
+  .desk-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+  }
+
+  .hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  button.primary {
+    background: var(--amber);
+    color: #1B1400;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 22px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.1s ease, background 0.15s ease;
+  }
+  button.primary:hover { background: #f3b357; }
+  button.primary:active { transform: scale(0.98); }
+  button.primary:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+
+  button.ghost {
+    background: transparent;
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    border-radius: 4px;
+    padding: 10px 18px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button.ghost:hover { background: rgba(79, 209, 174, 0.08); }
+  button.ghost:disabled { border-color: var(--line); color: var(--muted); cursor: not-allowed; }
+
+  .task-ledger {
+    display: none;
+    margin-bottom: 24px;
+  }
+  .task-ledger.show { display: block; }
+
+  .ledger-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 14px;
+  }
+  .ledger-row:last-child { border-bottom: none; }
+  .ledger-key {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .ledger-val { text-align: right; max-width: 60%; }
+
+  .board-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 32px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .board-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .bid-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 18px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    opacity: 0;
+    transform: translateY(6px);
+    animation: rise 0.4s ease forwards;
+  }
+  .bid-row.top {
+    border-color: var(--amber-dim);
+    box-shadow: 0 0 0 1px rgba(232, 163, 61, 0.15);
+  }
+
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .rank {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .bid-row.top .rank { color: var(--amber); }
+
+  .agent-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .agent-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .stamp {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+    border-radius: 2px;
+    padding: 2px 6px;
+    margin-left: 8px;
+    transform: rotate(-2deg);
+  }
+
+  .price {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: right;
+  }
+  .eta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 3px;
+  }
+
+  .score-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--line);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%;
+    background: var(--teal);
+  }
+  .bid-row.top .score-bar-fill { background: var(--amber); }
+
+  .explanation {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--paper);
+    background: rgba(232, 163, 61, 0.06);
+    border-left: 2px solid var(--amber);
+    padding: 14px 16px;
+    margin: 20px 0;
+    line-height: 1.6;
+  }
+
+  .approve-bar {
+    display: none;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  .approve-bar.show { display: flex; }
+
+  .escrow-result {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid var(--teal);
+    border-radius: 6px;
+    background: rgba(79, 209, 174, 0.06);
+  }
+  .escrow-result.show { display: block; }
+  .escrow-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    color: var(--teal);
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .escrow-tx {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .empty-state {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    padding: 40px 0;
+  }
+
+  .error-box {
+    display: none;
+    background: rgba(232, 102, 74, 0.08);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    border-radius: 4px;
+    padding: 14px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .error-box.show { display: block; }
+
+  .loader {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 14px;
+  }
+  .loader.show { display: flex; }
+  .loader-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--amber);
+    animation: pulse 1s infinite ease-in-out;
+  }
+  .loader-dot:nth-child(2) { animation-delay: 0.15s; }
+  .loader-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="wordmark">QUOTE<span class="dot">·</span>RUNNER</div>
+      <div class="eyebrow">Agent Procurement Desk — built for OKX.AI</div>
+    </div>
+    <div class="mode-badge" id="modeBadge">checking mode…</div>
+  </header>
+
+  <div class="desk">
+    <div class="desk-label">01 — Describe the task</div>
+    <textarea id="taskInput" placeholder="e.g. I need a logo for my coffee brand, budget 20 USDT, need it in 2 days"></textarea>
+    <div class="desk-footer">
+      <div class="hint">Plain language in. Structured task out.</div>
+      <button class="primary" id="submitBtn">Post to Marketplace</button>
+    </div>
+    <div class="loader" id="parseLoader">
+      <div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>
+      <span>Parsing task and collecting bids…</span>
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="task-ledger" id="taskLedger">
+    <div class="desk-label">02 — Structured task</div>
+    <div class="ledger-row"><span class="ledger-key">Title</span><span class="ledger-val" id="ledTitle"></span></div>
+    <div class="ledger-row"><span class="ledger-key">Category</span><span class="ledger-val" id="ledCategory"></span></div>
+    <div class="ledger-row"><span class="ledger-key">Budget</span><span class="ledger-val" id="ledBudget"></span></div>
+    <div class="ledger-row"><span class="ledger-key">Deadline</span><span class="ledger-val" id="ledDeadline"></span></div>
+  </div>
+
+  <div id="bidSection" style="display:none;">
+    <div class="board-label">03 — Live bids</div>
+    <div id="bidBoard"></div>
+    <div class="explanation" id="explanation"></div>
+    <div class="approve-bar" id="approveBar">
+      <button class="ghost" id="approveBtn">Approve top bid &amp; fund escrow</button>
+    </div>
+    <div class="loader" id="approveLoader">
+      <div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>
+      <span>Funding escrow…</span>
+    </div>
+    <div class="escrow-result" id="escrowResult">
+      <div class="escrow-title">Escrow funded</div>
+      <div class="escrow-tx" id="escrowTx"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let currentTaskId = null;
+  let currentRecommendedBidId = null;
+
+  async function checkStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      const badge = $('modeBadge');
+      badge.textContent = `mode: ${data.marketplace_mode}${data.groq_configured ? '' : ' · GROQ KEY MISSING'}`;
+      badge.className = 'mode-badge ' + (data.marketplace_mode === 'live' ? 'live' : 'mock');
+    } catch (e) {
+      $('modeBadge').textContent = 'backend unreachable';
+    }
+  }
+  checkStatus();
+
+  function showError(msg) {
+    const box = $('errorBox');
+    box.textContent = msg;
+    box.classList.add('show');
+  }
+  function hideError() { $('errorBox').classList.remove('show'); }
+
+  $('submitBtn').addEventListener('click', async () => {
+    const input = $('taskInput').value.trim();
+    if (!input) return;
+    hideError();
+    $('submitBtn').disabled = true;
+    $('parseLoader').classList.add('show');
+    $('bidSection').style.display = 'none';
+    $('taskLedger').classList.remove('show');
+
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+
+      renderTask(data.task);
+
+      if (data.needs_clarification) {
+        showError('Task is a bit vague — consider adding: ' + data.task.clarifying_questions.join('; '));
+        return;
+      }
+
+      currentTaskId = data.task_id;
+      currentRecommendedBidId = data.recommended_bid_id;
+      renderBids(data.bids, data.recommended_bid_id);
+      $('explanation').textContent = data.explanation;
+      $('bidSection').style.display = 'block';
+      $('approveBar').classList.add('show');
+      $('escrowResult').classList.remove('show');
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      $('submitBtn').disabled = false;
+      $('parseLoader').classList.remove('show');
+    }
+  });
+
+  function renderTask(task) {
+    $('ledTitle').textContent = task.title;
+    $('ledCategory').textContent = task.category;
+    $('ledBudget').textContent = task.budget_usdt + ' USDT';
+    $('ledDeadline').textContent = task.deadline_hours + 'h';
+    $('taskLedger').classList.add('show');
+  }
+
+  function renderBids(bids, recommendedId) {
+    const board = $('bidBoard');
+    board.innerHTML = '';
+    bids.forEach((bid, i) => {
+      const isTop = bid.bid_id === recommendedId;
+      const row = document.createElement('div');
+      row.className = 'bid-row' + (isTop ? ' top' : '');
+      row.style.animationDelay = (i * 0.08) + 's';
+      row.innerHTML = `
+        <div class="rank">${i + 1}</div>
+        <div>
+          <div class="agent-name">${bid.agent_name}${isTop ? '<span class="stamp">recommended</span>' : ''}</div>
+          <div class="agent-meta">${bid.reputation}★ reputation · score ${Math.round(bid.score * 100)}/100</div>
+          <div class="score-bar"><div class="score-bar-fill" style="width:${Math.round(bid.score * 100)}%"></div></div>
+        </div>
+        <div>
+          <div class="price">${bid.price_usdt} USDT</div>
+          <div class="eta">${bid.eta_hours}h ETA</div>
+        </div>
+        <div></div>
+      `;
+      board.appendChild(row);
+    });
+  }
+
+  $('approveBtn').addEventListener('click', async () => {
+    if (!currentTaskId || !currentRecommendedBidId) return;
+    $('approveBtn').disabled = true;
+    $('approveLoader').classList.add('show');
+    hideError();
+
+    try {
+      const res = await fetch(`/api/tasks/${currentTaskId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bidId: currentRecommendedBidId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Approval failed');
+
+      $('escrowTx').textContent = `tx: ${data.escrow_tx || data.task_id} · status: ${data.status}`;
+      $('escrowResult').classList.add('show');
+      $('approveBar').classList.remove('show');
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      $('approveLoader').classList.remove('show');
+    }
+  });
+</script>
+</body>
+</html>
