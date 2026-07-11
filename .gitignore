@@ -18,6 +18,3 @@ yarn-error.log*
 Thumbs.db
 
 # Public image assets (kept local only)
-public/*.jpg
-public/*.png
-public/*.svg
