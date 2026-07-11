@@ -173,4 +173,41 @@ app.listen(PORT, () => {
   // Send immediately on start, then every 2 minutes
   triggerHeartbeat();
   setInterval(triggerHeartbeat, 2 * 60 * 1000);
+
+  // Auto-apply loop to auto-accept test jobs from OKX.AI review team
+  const { exec } = require('child_process');
+  async function triggerAutoApply() {
+    if (MODE !== 'live') return;
+    try {
+      const cmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent tasks --agent-id 4814`;
+      exec(cmd, (err, stdout) => {
+        if (err) return;
+        const lines = stdout.split('\n');
+        const createdJobs = [];
+        for (const line of lines) {
+          if (line.includes('[created]')) {
+            const match = line.match(/(0x[a-fA-F0-9]{64})/);
+            if (match) createdJobs.push(match[1]);
+          }
+        }
+        for (const jobId of createdJobs) {
+          console.log(`[Auto-Apply] Found test task ${jobId}. Applying...`);
+          const applyCmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent apply ${jobId} --token-amount 1 --token-symbol USDT --agent-id 4814`;
+          exec(applyCmd, (applyErr, applyStdout) => {
+            if (applyErr) {
+              console.error(`[Auto-Apply] Failed to apply to ${jobId}:`, applyErr.message);
+            } else {
+              console.log(`[Auto-Apply] Successfully applied to ${jobId}:`, applyStdout.trim());
+            }
+          });
+        }
+      });
+    } catch (e) {
+      console.error('[Auto-Apply] Error:', e.message);
+    }
+  }
+
+  // Run every 30 seconds
+  triggerAutoApply();
+  setInterval(triggerAutoApply, 30 * 1000);
 });
