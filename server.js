@@ -176,6 +176,8 @@ app.listen(PORT, () => {
 
   // Auto-apply loop to auto-accept test jobs from OKX.AI review team
   const { exec } = require('child_process');
+  const appliedJobs = new Set();
+
   async function triggerAutoApply() {
     if (MODE !== 'live') return;
     try {
@@ -191,7 +193,11 @@ app.listen(PORT, () => {
           }
         }
         for (const jobId of createdJobs) {
+          if (appliedJobs.has(jobId)) continue;
+          
           console.log(`[Auto-Apply] Found test task ${jobId}. Applying...`);
+          appliedJobs.add(jobId);
+
           const applyCmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent apply ${jobId} --token-amount 1 --token-symbol USDT --agent-id 4814`;
           exec(applyCmd, (applyErr, applyStdout) => {
             if (applyErr) {
