@@ -10,6 +10,7 @@ const {
   postTaskAndCollectBids,
   approveAndFundEscrow,
   getWalletFundingStatus,
+  sendHeartbeat,
   MarketplaceError,
   MODE,
 } = require('./lib/marketplaceClient');
@@ -157,4 +158,19 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Quote Runner backend running on http://localhost:${PORT}`);
   console.log(`Marketplace mode: ${MODE}`);
+
+  // Periodic agent heartbeat to keep status "online" on OKX.AI
+  async function triggerHeartbeat() {
+    try {
+      console.log('Sending agent heartbeat...');
+      await sendHeartbeat();
+      console.log('Agent heartbeat sent successfully.');
+    } catch (err) {
+      console.error('Failed to send heartbeat:', err.message);
+    }
+  }
+
+  // Send immediately on start, then every 2 minutes
+  triggerHeartbeat();
+  setInterval(triggerHeartbeat, 2 * 60 * 1000);
 });
