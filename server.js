@@ -188,17 +188,24 @@ app.listen(PORT, () => {
         const createdJobs = [];
         for (const line of lines) {
           if (line.includes('[created]')) {
-            const match = line.match(/(0x[a-fA-F0-9]{64})/);
-            if (match) createdJobs.push(match[1]);
+            const match = line.match(/\[created\]\s+(0x[a-fA-F0-9]{64})\s+[—-]\s*(\d+(?:\.\d+)?)\s+(\w+)/);
+            if (match) {
+              createdJobs.push({
+                jobId: match[1],
+                amount: match[2],
+                symbol: match[3],
+              });
+            }
           }
         }
-        for (const jobId of createdJobs) {
+        for (const job of createdJobs) {
+          const { jobId, amount, symbol } = job;
           if (appliedJobs.has(jobId)) continue;
           
-          console.log(`[Auto-Apply] Found test task ${jobId}. Applying...`);
+          console.log(`[Auto-Apply] Found test task ${jobId} with amount ${amount} ${symbol}. Applying...`);
           appliedJobs.add(jobId);
 
-          const applyCmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent apply ${jobId} --token-amount 1 --token-symbol USDT --agent-id 4814`;
+          const applyCmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent apply ${jobId} --token-amount ${amount} --token-symbol ${symbol} --agent-id 4814`;
           exec(applyCmd, (applyErr, applyStdout) => {
             if (applyErr) {
               console.error(`[Auto-Apply] Failed to apply to ${jobId}:`, applyErr.message);
