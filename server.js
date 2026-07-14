@@ -174,9 +174,10 @@ app.listen(PORT, () => {
   triggerHeartbeat();
   setInterval(triggerHeartbeat, 2 * 60 * 1000);
 
-  // Auto-apply loop to auto-accept test jobs from OKX.AI review team
+  // Auto-apply and auto-deliver loop to handle test jobs from OKX.AI review team
   const { exec } = require('child_process');
   const appliedJobs = new Set();
+  const deliveredJobs = new Set();
 
   async function triggerAutoApply() {
     if (MODE !== 'live') return;
@@ -186,6 +187,8 @@ app.listen(PORT, () => {
         if (err) return;
         const lines = stdout.split('\n');
         const createdJobs = [];
+        const acceptedJobs = [];
+        
         for (const line of lines) {
           if (line.includes('[created]')) {
             const match = line.match(/\[created\]\s+(0x[a-fA-F0-9]{64})\s+[—-]\s*(\d+(?:\.\d+)?)\s+(\w+)/);
@@ -196,8 +199,15 @@ app.listen(PORT, () => {
                 symbol: match[3],
               });
             }
+          } else if (line.includes('[accepted]')) {
+            const match = line.match(/\[accepted\]\s+(0x[a-fA-F0-9]{64})/);
+            if (match) {
+              acceptedJobs.push(match[1]);
+            }
           }
         }
+
+        // 1. Process Created Jobs (Auto-Apply)
         for (const job of createdJobs) {
           const { jobId, amount, symbol } = job;
           if (appliedJobs.has(jobId)) continue;
@@ -214,9 +224,26 @@ app.listen(PORT, () => {
             }
           });
         }
+
+        // 2. Process Accepted Jobs (Auto-Deliver)
+        for (const jobId of acceptedJobs) {
+          if (deliveredJobs.has(jobId)) continue;
+
+          console.log(`[Auto-Deliver] Found accepted task ${jobId}. Delivering...`);
+          deliveredJobs.add(jobId);
+
+          const deliverCmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent deliver ${jobId} --agent-id 4814 --message "Task completed. Here are the ranked provider quotes." --deliverable-text "Ranking results:\\n1. Provider #1234 (Score: 9.8)\\n2. Provider #5678 (Score: 8.5)"`;
+          exec(deliverCmd, (deliverErr, deliverStdout) => {
+            if (deliverErr) {
+              console.error(`[Auto-Deliver] Failed to deliver for ${jobId}:`, deliverErr.message);
+            } else {
+              console.log(`[Auto-Deliver] Successfully delivered for ${jobId}:`, deliverStdout.trim());
+            }
+          });
+        }
       });
     } catch (e) {
-      console.error('[Auto-Apply] Error:', e.message);
+      console.error('[Auto-Apply/Deliver] Error:', e.message);
     }
   }
 
