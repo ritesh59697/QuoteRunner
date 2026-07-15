@@ -15,6 +15,8 @@ const {
   MODE,
 } = require('./lib/marketplaceClient');
 const { rankBids, explainTopChoice } = require('./lib/scoringEngine');
+const { getA2aReadiness } = require('./lib/a2aClient');
+const { ensureWorkingProvider } = require('./lib/providerFallback');
 
 const app = express();
 app.use(cors());
@@ -41,28 +43,33 @@ function sendError(res, err, fallbackStatus = 500) {
 
 // GET /api/status -- sanity check + live wallet preflight
 app.get('/api/status', async (req, res) => {
+  // Reported independently of funding and heartbeat: a green heartbeat says
+  // nothing about whether inbound job invites can actually be received.
+  const a2a =
+    MODE === 'live'
+      ? await getA2aReadiness().catch((err) => ({
+          ready: false,
+          message: `Readiness check failed: ${err.message}`,
+        }))
+      : { ready: true, message: 'Mock mode — no A2A channel required.' };
+
+  const status = {
+    ok: true,
+    marketplace_mode: MODE,
+    groq_configured: Boolean(process.env.GROQ_API_KEY),
+    agent_id_configured: Boolean(process.env.OKX_AGENT_ID),
+    asp_agent_id_configured: Boolean(process.env.OKX_ASP_AGENT_ID),
+    can_receive_jobs: a2a.ready,
+    a2a,
+  };
+
   try {
-    const funding = await getWalletFundingStatus({ requiredUsdt: 0 });
-    res.json({
-      ok: true,
-      marketplace_mode: MODE,
-      groq_configured: Boolean(process.env.GROQ_API_KEY),
-      agent_id_configured: Boolean(process.env.OKX_AGENT_ID),
-      funding,
-    });
+    status.funding = await getWalletFundingStatus({ requiredUsdt: 0 });
   } catch (err) {
-    res.json({
-      ok: true,
-      marketplace_mode: MODE,
-      groq_configured: Boolean(process.env.GROQ_API_KEY),
-      agent_id_configured: Boolean(process.env.OKX_AGENT_ID),
-      funding: {
-        mode: MODE,
-        ready: MODE === 'mock',
-        message: err.message,
-      },
-    });
+    status.funding = { mode: MODE, ready: MODE === 'mock', message: err.message };
   }
+
+  res.json(status);
 });
 
 // GET /api/funding?amount=1 — re-check USDT for a bid amount
@@ -178,90 +185,37 @@ app.listen(PORT, () => {
   triggerHeartbeat();
   setInterval(triggerHeartbeat, 2 * 60 * 1000);
 
-  // Auto-apply and auto-deliver loop to handle test jobs from OKX.AI review team
-  const { exec } = require('child_process');
-  const appliedJobs = new Set();
-  const deliveredJobs = new Set();
-
-  const aspAgentId = process.env.OKX_ASP_AGENT_ID || '4814';
-  const execOptions = {
-    env: {
-      ...process.env,
-      OKX_API_KEY: process.env.OKX_API_KEY,
-      OKX_SECRET_KEY: process.env.OKX_SECRET_KEY,
-      OKX_PASSPHRASE: process.env.OKX_PASSPHRASE
-    }
-  };
-
-  async function triggerAutoApply() {
+  // Inbound job invites are delivered as system events by the okx-a2a daemon,
+  // which dispatches them to the configured AI runtime. That runtime calls
+  // `onchainos agent next-action`, which owns the apply/deliver state machine.
+  //
+  // This server does not poll for jobs and does not call `apply` itself:
+  // `agent tasks` only lists jobs we already hold, and `apply` outside the
+  // JobAspSelected playbook corrupts task state. All this process does is
+  // assert the delivery channel is actually up, and say so loudly if not.
+  async function checkA2aReadiness() {
     if (MODE !== 'live') return;
     try {
-      const cmd = `onchainos agent tasks --agent-id ${aspAgentId}`;
-      exec(cmd, execOptions, (err, stdout) => {
-        if (err) return;
-        const lines = stdout.split('\n');
-        const createdJobs = [];
-        const acceptedJobs = [];
-        
-        for (const line of lines) {
-          if (line.includes('[created]')) {
-            const match = line.match(/\[created\]\s+(0x[a-fA-F0-9]{64})\s+[—-]\s*(\d+(?:\.\d+)?)\s+(\w+)/);
-            if (match) {
-              createdJobs.push({
-                jobId: match[1],
-                amount: match[2],
-                symbol: match[3],
-              });
-            }
-          } else if (line.includes('[accepted]')) {
-            const match = line.match(/\[accepted\]\s+(0x[a-fA-F0-9]{64})/);
-            if (match) {
-              acceptedJobs.push(match[1]);
-            }
-          }
-        }
+      const readiness = await getA2aReadiness();
+      if (readiness.ready) {
+        console.log(`[A2A] ${readiness.message}`);
+        return;
+      }
+      console.error(`[A2A] NOT READY — job invites will be missed: ${readiness.message}`);
 
-        // 1. Process Created Jobs (Auto-Apply)
-        for (const job of createdJobs) {
-          const { jobId, amount, symbol } = job;
-          if (appliedJobs.has(jobId)) continue;
-          
-          console.log(`[Auto-Apply] Found test task ${jobId} with amount ${amount} ${symbol}. Applying...`);
-          appliedJobs.add(jobId);
-
-          const applyCmd = `onchainos agent apply ${jobId} --token-amount ${amount} --token-symbol ${symbol} --agent-id ${aspAgentId}`;
-          exec(applyCmd, execOptions, (applyErr, applyStdout) => {
-            if (applyErr) {
-              console.error(`[Auto-Apply] Failed to apply to ${jobId}:`, applyErr.message);
-            } else {
-              console.log(`[Auto-Apply] Successfully applied to ${jobId}:`, applyStdout.trim());
-            }
-          });
-        }
-
-        // 2. Process Accepted Jobs (Auto-Deliver)
-        for (const jobId of acceptedJobs) {
-          if (deliveredJobs.has(jobId)) continue;
-
-          console.log(`[Auto-Deliver] Found accepted task ${jobId}. Delivering...`);
-          deliveredJobs.add(jobId);
-
-          const deliverCmd = `onchainos agent deliver ${jobId} --agent-id ${aspAgentId} --message "Task completed. Here are the ranked provider quotes." --deliverable-text "Ranking results:\\n1. Provider #1234 (Score: 9.8)\\n2. Provider #5678 (Score: 8.5)"`;
-          exec(deliverCmd, execOptions, (deliverErr, deliverStdout) => {
-            if (deliverErr) {
-              console.error(`[Auto-Deliver] Failed to deliver for ${jobId}:`, deliverErr.message);
-            } else {
-              console.log(`[Auto-Deliver] Successfully delivered for ${jobId}:`, deliverStdout.trim());
-            }
-          });
-        }
-      });
-    } catch (e) {
-      console.error('[Auto-Apply/Deliver] Error:', e.message);
+      // Secondary net to the standalone `npm run watchdog`: if the bound AI
+      // provider is the reason we're not ready, try to fail over to a working
+      // one. The watchdog reacts to dispatch failures; this reacts to the
+      // provider being unusable even before a job arrives.
+      if (readiness.ai_provider_logged_in === false) {
+        const report = await ensureWorkingProvider();
+        console.error(`[A2A] provider failover: ${report.message || report.action}`);
+      }
+    } catch (err) {
+      console.error('[A2A] Readiness check failed:', err.message);
     }
   }
 
-  // Run every 30 seconds
-  triggerAutoApply();
-  setInterval(triggerAutoApply, 30 * 1000);
+  checkA2aReadiness();
+  setInterval(checkA2aReadiness, 5 * 60 * 1000);
 });

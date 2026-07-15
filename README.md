@@ -43,8 +43,53 @@ should demo-test with right now.
    binary itself is a separate install).
 4. Register a User-role agent identity (one-time): `onchainos agent create --role user`
    — this gives you an agent ID. Put it in `.env` as `OKX_AGENT_ID`.
-5. Set `MARKETPLACE_MODE=live` in `.env`.
-6. **Before trusting it for a demo**, run the verification checklist below —
+   Your ASP-role agent ID goes in `OKX_ASP_AGENT_ID`.
+   `OKX_ASP_SERVICE_FEE_USDT` must match the fee on your real listing —
+   check it with `onchainos agent service-list --agent-id <ASP id>`. Service
+   `31684` is listed at **0.01 USDT**, so a value of `0` here advertises a
+   price the marketplace does not agree with.
+5. **Install and start the A2A daemon — required to receive any job:**
+   ```bash
+   npm install -g @okxweb3/a2a-node@latest   # needs Node >= 22.14.0
+   okx-a2a doctor --fix                      # binds AI provider, starts daemon, refreshes agents
+   ```
+   > ⚠️ Run `doctor --fix` **from the AI CLI you want bound, and only for
+   > first-time setup.** It binds the provider to whichever runtime calls it.
+   > Re-running it later from a different tool silently rebinds the provider to
+   > that tool — if that tool's login is expired, every inbound invite is then
+   > received and dropped. Doctor's `✗ default provider X does not match the
+   > detected runtime Y` is a **false alarm** when a bound, working provider is
+   > already set; ignore it. The check that matters is `AI provider CLI: … is
+   > logged in`, and doctor reports that from stale credentials, so confirm it
+   > for real (e.g. `codex exec "say hi"`).
+   Inbound job invites are delivered as system events over this daemon. Without
+   it your ASP receives nothing — and, crucially, **still reports itself online**,
+   because heartbeat is a separate path. If `okx-a2a` is not on your `PATH`
+   (npm's global prefix often isn't), set `OKX_A2A_BIN` in `.env`.
+6. **Start the provider watchdog (strongly recommended for live/review):**
+   ```bash
+   npm run watchdog        # runs independently of the web server
+   ```
+   The daemon drives the apply/deliver playbook through ONE AI CLI. If that CLI
+   dies mid-job (expired login, exhausted quota) the invite is silently dropped
+   and escrow strands. The watchdog tails the daemon log and, on a provider-level
+   failure, fails over to the next working provider in `OKX_PROVIDER_PRIORITY`
+   (default `claude,codex,hermes`; keep a free/local one last). Check any time
+   with `npm run provider:check`.
+7. **Wire real deliverables into the ASP AI:**
+   ```bash
+   npm run install-asp     # writes SKILL.md/CLAUDE.md into the daemon workspace
+   ```
+   When a job is accepted, the daemon asks its AI runtime to produce the
+   deliverable. Left alone it **improvises** — inventing providers and even the
+   budget (observed: it delivered made-up agents and a "~20 USDT" budget for a
+   0.01 USDT task). This step drops instructions into the daemon workspace
+   (`~/.okx-agent-task/workspace`) telling the AI to instead run
+   `scripts/rank-for-job.js <jobId>` and deliver its output verbatim — your real
+   `asp-match` → `scoringEngine` ranking with the correct on-chain budget. Re-run
+   if you move the repo. Preview any job's deliverable with `npm run rank <jobId>`.
+8. Set `MARKETPLACE_MODE=live` in `.env`.
+9. **Before trusting it for a demo**, run the verification checklist below —
    the exact JSON shape `asp-match` returns hasn't been field-tested yet by
    either of us, and the parsing in `marketplaceClient.js` has fallback field
    names (`m.Price || m.price || m.feeAmount`) but may still need adjustment
@@ -122,6 +167,7 @@ quote-runner/
 ├── lib/
 │   ├── taskParser.js         # Groq LLM call: plain text -> structured task JSON
 │   ├── marketplaceClient.js  # OKX.AI integration (mock + live-stub)
+│   ├── a2aClient.js          # A2A daemon readiness — can we receive job invites at all?
 │   └── scoringEngine.js      # Bid ranking + plain-language explanation (your product IP)
 ├── public/
 │   └── index.html            # UI - single file, no build step

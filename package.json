@@ -6,7 +6,11 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "watchdog": "node scripts/provider-watchdog.js",
+    "provider:check": "node -e \"require('dotenv').config();require('./lib/providerFallback').ensureWorkingProvider().then(r=>console.log(r.message||r.action))\"",
+    "install-asp": "node scripts/install-asp-workspace.js",
+    "rank": "node scripts/rank-for-job.js"
   },
   "dependencies": {
     "express": "^4.19.2",
