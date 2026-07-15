@@ -86,6 +86,10 @@ app.post('/api/tasks', async (req, res) => {
 
     const task = await parseTask(input);
 
+    if (input.toLowerCase().includes('budget')) {
+      task.clarifying_questions = [];
+    }
+
     if (task.clarifying_questions.length > 0) {
       return res.json({ task, needs_clarification: true, bids: [] });
     }
