@@ -183,11 +183,21 @@ app.listen(PORT, () => {
   const appliedJobs = new Set();
   const deliveredJobs = new Set();
 
+  const aspAgentId = process.env.OKX_ASP_AGENT_ID || '4814';
+  const execOptions = {
+    env: {
+      ...process.env,
+      OKX_API_KEY: process.env.OKX_API_KEY,
+      OKX_SECRET_KEY: process.env.OKX_SECRET_KEY,
+      OKX_PASSPHRASE: process.env.OKX_PASSPHRASE
+    }
+  };
+
   async function triggerAutoApply() {
     if (MODE !== 'live') return;
     try {
-      const cmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent tasks --agent-id 4814`;
-      exec(cmd, (err, stdout) => {
+      const cmd = `onchainos agent tasks --agent-id ${aspAgentId}`;
+      exec(cmd, execOptions, (err, stdout) => {
         if (err) return;
         const lines = stdout.split('\n');
         const createdJobs = [];
@@ -219,8 +229,8 @@ app.listen(PORT, () => {
           console.log(`[Auto-Apply] Found test task ${jobId} with amount ${amount} ${symbol}. Applying...`);
           appliedJobs.add(jobId);
 
-          const applyCmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent apply ${jobId} --token-amount ${amount} --token-symbol ${symbol} --agent-id 4814`;
-          exec(applyCmd, (applyErr, applyStdout) => {
+          const applyCmd = `onchainos agent apply ${jobId} --token-amount ${amount} --token-symbol ${symbol} --agent-id ${aspAgentId}`;
+          exec(applyCmd, execOptions, (applyErr, applyStdout) => {
             if (applyErr) {
               console.error(`[Auto-Apply] Failed to apply to ${jobId}:`, applyErr.message);
             } else {
@@ -236,8 +246,8 @@ app.listen(PORT, () => {
           console.log(`[Auto-Deliver] Found accepted task ${jobId}. Delivering...`);
           deliveredJobs.add(jobId);
 
-          const deliverCmd = `OKX_API_KEY=${process.env.OKX_API_KEY} OKX_SECRET_KEY=${process.env.OKX_SECRET_KEY} OKX_PASSPHRASE='${process.env.OKX_PASSPHRASE}' onchainos agent deliver ${jobId} --agent-id 4814 --message "Task completed. Here are the ranked provider quotes." --deliverable-text "Ranking results:\\n1. Provider #1234 (Score: 9.8)\\n2. Provider #5678 (Score: 8.5)"`;
-          exec(deliverCmd, (deliverErr, deliverStdout) => {
+          const deliverCmd = `onchainos agent deliver ${jobId} --agent-id ${aspAgentId} --message "Task completed. Here are the ranked provider quotes." --deliverable-text "Ranking results:\\n1. Provider #1234 (Score: 9.8)\\n2. Provider #5678 (Score: 8.5)"`;
+          exec(deliverCmd, execOptions, (deliverErr, deliverStdout) => {
             if (deliverErr) {
               console.error(`[Auto-Deliver] Failed to deliver for ${jobId}:`, deliverErr.message);
             } else {
