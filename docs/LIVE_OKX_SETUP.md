@@ -35,6 +35,24 @@ comparison across matched providers.
    ```bash
    onchainos agent service-list --agent-id <ASP id>
    ```
+
+   Quote Runner offers its own ASP service as one of the quotes, so the
+   designated-escrow path can be exercised end-to-end. **This only appears when
+   `OKX_AGENT_ID` (buyer) and `OKX_ASP_AGENT_ID` (provider) are owned by
+   different wallets.** The marketplace refuses to let a wallet hire itself —
+   `create-task` fails with `Wallet API error (code=1001): designated provider
+   not match: <asp>` — so the bid is withheld rather than offered and then
+   rejected at approve. If both ids are yours (the usual single-account setup),
+   expect a log line like:
+
+   ```text
+   [marketplace] not offering our own ASP 4814: buyer agent 4767 and ASP 4814
+   share wallet 0x7518… — the marketplace rejects self-designation at create-task
+   ```
+
+   That is correct behaviour, not a failure. It also means you cannot test your
+   own ASP end-to-end from your own account; that needs a job from a second
+   wallet.
 6. Install and start the A2A daemon:
    ```bash
    npm install -g @okxweb3/a2a-node@latest
@@ -53,9 +71,21 @@ comparison across matched providers.
    npm run install-asp
    ```
 
-   This writes instructions into `~/.okx-agent-task/workspace` so accepted jobs
-   run this project's ranking deliverable instead of letting the daemon AI
-   improvise.
+   This does two things: it writes instructions into `~/.okx-agent-task/workspace`
+   so accepted jobs run this project's ranking deliverable instead of letting the
+   daemon AI improvise, and it syncs a copy of the runtime (`lib/`, `scripts/`,
+   `node_modules/`, `.env`) to `~/.okx-agent-task/asp-runtime`.
+
+   **The daemon runs that synced copy, not your repo — re-run `npm run install-asp`
+   after every change to `lib/` or `scripts/`, or the daemon keeps running stale
+   code.**
+
+   The copy exists because the daemon is started by launchd, and launchd-spawned
+   processes get no macOS TCC grant for `~/Downloads`, `~/Desktop`, or
+   `~/Documents`. If the repo lives in one of those, the daemon cannot even read
+   the entry script and the deliver step dies with `EPERM` *after* escrow is
+   funded. Override the destination with `OKX_ASP_RUNTIME` if needed; it must be
+   outside those three folders.
 9. Set live mode in `.env`:
    ```bash
    MARKETPLACE_MODE=live

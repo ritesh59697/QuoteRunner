@@ -21,7 +21,11 @@ require('dotenv').config();
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { ensureWorkingProvider, looksDead } = require('../lib/providerFallback');
+const {
+  ensureWorkingProvider,
+  isProviderFailureLine,
+  extractFailedProvider,
+} = require('../lib/providerFallback');
 
 const LOG_PATH =
   process.env.OKX_A2A_LOG ||
@@ -40,19 +44,8 @@ function log(...args) {
   console.log(`[watchdog ${new Date().toISOString()}]`, ...args);
 }
 
-// Pull the failing provider out of a daemon failure line, e.g.
-// "... codex CLI exited with code 1 for session=..."
-function extractFailedProvider(line) {
-  const m = line.match(/\b(claude|codex|hermes|openclaw)\s+CLI\s+exited/i);
-  return m ? m[1].toLowerCase() : null;
-}
-
-// A line worth reacting to: it reports a dispatch failure AND carries a
-// provider-level dead signature (not a plain task error).
-function isProviderFailureLine(line) {
-  if (!/command failed|CLI exited/i.test(line)) return false;
-  return looksDead(line);
-}
+// Failure-line detection lives in providerFallback.js so this watchdog and the
+// server's readiness check agree on what a dead provider looks like.
 
 async function onProviderFailure(suspectProvider, line) {
   const now = Date.now();

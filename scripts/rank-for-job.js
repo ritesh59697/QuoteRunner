@@ -15,11 +15,17 @@
  * mirroring the protocol rule that deliver only follows job_accepted.
  */
 
-require('dotenv').config();
+// Resolve .env from THIS script's location, never from cwd. The daemon invokes
+// us with cwd=~/.okx-agent-task/workspace, where no .env exists — a bare
+// dotenv.config() silently finds nothing, MARKETPLACE_MODE falls back to
+// 'mock', and this script cheerfully prints fabricated MOCK_AGENT_POOL
+// providers that the AI then delivers on-chain as a real ranking.
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { execFile } = require('child_process');
 const util = require('util');
 const execFileAsync = util.promisify(execFile);
-const { buildDeliverable, taskFromJob } = require('../lib/deliverableBuilder');
+const { buildDeliverable, taskFromJob, MODE } = require('../lib/deliverableBuilder');
 
 const ONCHAINOS_BIN = process.env.ONCHAINOS_BIN || 'onchainos';
 const ASP_AGENT_ID = process.env.OKX_ASP_AGENT_ID || '4814';
@@ -65,6 +71,21 @@ async function main() {
   if (!jobId) {
     console.error('Usage: node scripts/rank-for-job.js <jobId> [--deliver]');
     process.exit(2);
+  }
+
+  // Hard gate, not a warning. The workspace instructions tell the AI runtime to
+  // take our stdout verbatim and deliver it, so printing a mock ranking is as
+  // dangerous as delivering one ourselves — the fabricated providers reach the
+  // buyer either way. Exiting non-zero is the documented signal for the runtime
+  // to notify the buyer instead of inventing a deliverable.
+  if (MODE !== 'live') {
+    console.error(
+      `[rank-for-job] Refusing to run: MARKETPLACE_MODE is "${MODE}", not "live".\n` +
+        `  A mock ranking must never reach an on-chain deliverable. This usually means\n` +
+        `  .env was not loaded — check ${path.join(__dirname, '..', '.env')} exists and\n` +
+        `  sets MARKETPLACE_MODE=live.`
+    );
+    process.exit(1);
   }
 
   const job = await readJob(jobId);
