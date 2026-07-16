@@ -128,6 +128,24 @@ async function main() {
   // Run it through the same Groq parser the web app uses, so the budget and
   // deadline come from what they actually said rather than from our fee.
   const parsed = await parseTask(taskDesc);
+
+  // The parser guesses a budget when the user didn't give one. That's right for
+  // the web app (the user is there to correct it) and wrong here: nobody reviews
+  // this before it goes on-chain. If the runtime summarised the buyer's request
+  // and dropped "around 40 USDT", a guessed budget would silently drive the whole
+  // ranking and look authoritative. Refuse instead.
+  if (!parsed.budget_stated) {
+    console.error(
+      '[rank-for-job] Refusing to run: no budget found in the buyer\'s request.\n' +
+        `  Parsed budget ${parsed.budget_usdt} USDT is this engine's GUESS, not their words.\n` +
+        '  Usually this means --task-desc was summarised instead of copied verbatim —\n' +
+        '  pass the buyer\'s full request exactly as written. If they genuinely never\n' +
+        '  stated a budget, ask them via `onchainos agent user-notify` rather than\n' +
+        '  ranking against an invented number.'
+    );
+    process.exit(1);
+  }
+
   const task = taskFromJob({
     title: parsed.title,
     description: parsed.description,
