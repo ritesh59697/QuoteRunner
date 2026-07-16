@@ -17,3 +17,8 @@ yarn-error.log*
 # System files
 .DS_Store
 Thumbs.db
+
+# Screenshots and attachments the desktop client drops into the repo.
+# These are pasted chat images — they can contain private conversations and
+# credentials, and this is a public repo. Never commit them.
+.hermes/
