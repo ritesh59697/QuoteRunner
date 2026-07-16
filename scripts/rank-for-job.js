@@ -26,6 +26,7 @@ const { execFile } = require('child_process');
 const util = require('util');
 const execFileAsync = util.promisify(execFile);
 const { buildDeliverable, taskFromJob, MODE } = require('../lib/deliverableBuilder');
+const { parseTask } = require('../lib/taskParser');
 
 const ONCHAINOS_BIN = process.env.ONCHAINOS_BIN || 'onchainos';
 const ASP_AGENT_ID = process.env.OKX_ASP_AGENT_ID || '4814';
@@ -51,26 +52,59 @@ async function onchainos(args, { timeout = 90000 } = {}) {
 /**
  * Read what we can about the job. `agent status` prints plain text:
  *   Task status: accepted
- *   title:  Rank agents for logo work
+ *   title:  Rank quotes for logo job
  *   budget: 0.01 USDT
- * The on-chain budget is authoritative — we never guess it.
+ *
+ * NOTE: that `budget` is the escrow amount for OUR ranking service — the fee the
+ * buyer pays us. It is NOT the buyer's budget for the providers we are ranking.
+ * Scoring against it is nonsense: on job 0x4d8458 it meant every real logo
+ * provider was marked "over budget" against our own 0.01 USDT fee, and an
+ * escrow-monitoring service won a logo job. The buyer's real budget and
+ * requirements live in the task description, which `agent status` does not
+ * return — only `next-action` does, and only the AI runtime holding the event
+ * payload can call that. So the description is passed in via --task-desc.
  */
 async function readJob(jobId) {
   const out = await onchainos(['agent', 'status', jobId, '--agent-id', ASP_AGENT_ID]);
   const status = (out.match(/status:\s*(\w+)/i) || [])[1] || null;
   const title = (out.match(/title:\s*(.+)/i) || [])[1]?.trim() || null;
-  const budget = (out.match(/budget:\s*([\d.]+)/i) || [])[1] || '0';
-  return { status, title, budgetUsdt: Number(budget) };
+  const fee = (out.match(/budget:\s*([\d.]+)/i) || [])[1] || '0';
+  return { status, title, ourFeeUsdt: Number(fee) };
+}
+
+function argValue(args, name) {
+  const i = args.indexOf(name);
+  if (i < 0) return null;
+  const v = args[i + 1];
+  return v && !v.startsWith('--') ? v : null;
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const jobId = args.find((a) => a.startsWith('0x'));
+  const jobId = args.find((a) => a.startsWith('0x') && a.length > 40);
   const doDeliver = args.includes('--deliver');
+  const taskDesc = argValue(args, '--task-desc');
 
   if (!jobId) {
-    console.error('Usage: node scripts/rank-for-job.js <jobId> [--deliver]');
+    console.error(
+      'Usage: node scripts/rank-for-job.js <jobId> --task-desc "<buyer request>" [--deliver]'
+    );
     process.exit(2);
+  }
+
+  // Required, and deliberately has no fallback. The tempting default — the
+  // on-chain budget — is our own service fee, which silently produces a
+  // confidently wrong ranking (see readJob). Refusing is the safe failure.
+  if (!taskDesc || !taskDesc.trim()) {
+    console.error(
+      '[rank-for-job] Refusing to run: --task-desc is required.\n' +
+        '  Pass the buyer\'s request VERBATIM, exactly as it appears in the\n' +
+        '  `description:` field of the next-action playbook output. It carries their\n' +
+        '  real budget and deadline. Do NOT summarise it, and do NOT substitute the\n' +
+        '  on-chain budget — that is our ranking fee, not the buyer\'s budget for the\n' +
+        '  providers being ranked.'
+    );
+    process.exit(1);
   }
 
   // Hard gate, not a warning. The workspace instructions tell the AI runtime to
@@ -89,11 +123,22 @@ async function main() {
   }
 
   const job = await readJob(jobId);
+
+  // The buyer wrote free text ("My budget is around 40 USDT, within 48 hours").
+  // Run it through the same Groq parser the web app uses, so the budget and
+  // deadline come from what they actually said rather than from our fee.
+  const parsed = await parseTask(taskDesc);
   const task = taskFromJob({
-    title: job.title,
-    description: job.title, // asp-match keys off text; title is the task summary
-    budgetUsdt: job.budgetUsdt,
+    title: parsed.title,
+    description: parsed.description,
+    budgetUsdt: parsed.budget_usdt,
+    deadlineHours: parsed.deadline_hours,
   });
+
+  console.error(
+    `[rank-for-job] buyer budget ${task.budget_usdt} USDT / ${task.deadline_hours}h ` +
+      `(our fee for this job: ${job.ourFeeUsdt} USDT)`
+  );
 
   const { markdown, ranked, candidateCount } = await buildDeliverable(task);
 

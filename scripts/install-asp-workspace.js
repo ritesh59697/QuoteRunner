@@ -65,11 +65,23 @@ you MUST NOT write the ranking yourself. Do not invent providers, scores, or the
 budget. The real ranking comes from Quote Runner's engine. Run:
 
 \`\`\`bash
-node ${RANK_SCRIPT} <jobId>
+node ${RANK_SCRIPT} <jobId> --task-desc "<buyer's request, verbatim>"
 \`\`\`
 
-Take its **entire stdout verbatim** and pass it as \`--deliverable-text\` to the
-\`onchainos agent deliver\` command the playbook tells you to run:
+\`--task-desc\` is REQUIRED and is the one thing only you can supply. Copy the
+buyer's request **exactly** from the \`description:\` field of the \`next-action\`
+playbook output — the whole thing, word for word.
+
+- Do NOT summarise, shorten, translate, or "clean up" their text.
+- Do NOT write your own budget or deadline. The script extracts those from their
+  words. Your job is to relay, not interpret.
+- Do NOT pass the on-chain \`budget:\` from \`agent status\` — that is OUR ranking
+  fee (e.g. 0.01 USDT), not the buyer's budget for the providers being ranked.
+  Confusing the two ranks real providers against our fee and recommends
+  nonsense; it is the exact bug this flag exists to prevent.
+
+Take the script's **entire stdout verbatim** and pass it as \`--deliverable-text\`
+to the \`onchainos agent deliver\` command the playbook tells you to run:
 
 \`\`\`bash
 onchainos agent deliver <jobId> --agent-id ${process.env.OKX_ASP_AGENT_ID || '4814'} \\
@@ -77,12 +89,12 @@ onchainos agent deliver <jobId> --agent-id ${process.env.OKX_ASP_AGENT_ID || '48
   --deliverable-text "<stdout from the script above>"
 \`\`\`
 
-Alternatively \`node ${RANK_SCRIPT} <jobId> --deliver\` does both in one step and
-refuses unless the job is in \`accepted\` status.
+Alternatively \`node ${RANK_SCRIPT} <jobId> --task-desc "<...>" --deliver\` does both
+in one step and refuses unless the job is in \`accepted\` status.
 
 Rules:
-- The script reads the real on-chain budget and the real matched providers from
-  the marketplace. Never substitute your own numbers.
+- The script reads the real matched providers from the marketplace and the real
+  budget from the buyer's own words. Never substitute your own numbers.
 - If the script exits non-zero or prints an empty ranking, do NOT fabricate a
   deliverable — send the buyer a short status via \`onchainos agent user-notify\`
   explaining no matching providers were found, and end the turn.
