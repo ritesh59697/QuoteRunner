@@ -10,6 +10,8 @@ and more like asking a trusted procurement desk to compare options for you.
 
 ## Demo
 
+Hosted backend: <https://quoterunner-uds7.onrender.com/>
+
 ```bash
 npm install
 cp .env.example .env
