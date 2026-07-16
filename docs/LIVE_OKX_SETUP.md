@@ -53,9 +53,21 @@ comparison across matched providers.
    npm run install-asp
    ```
 
-   This writes instructions into `~/.okx-agent-task/workspace` so accepted jobs
-   run this project's ranking deliverable instead of letting the daemon AI
-   improvise.
+   This does two things: it writes instructions into `~/.okx-agent-task/workspace`
+   so accepted jobs run this project's ranking deliverable instead of letting the
+   daemon AI improvise, and it syncs a copy of the runtime (`lib/`, `scripts/`,
+   `node_modules/`, `.env`) to `~/.okx-agent-task/asp-runtime`.
+
+   **The daemon runs that synced copy, not your repo — re-run `npm run install-asp`
+   after every change to `lib/` or `scripts/`, or the daemon keeps running stale
+   code.**
+
+   The copy exists because the daemon is started by launchd, and launchd-spawned
+   processes get no macOS TCC grant for `~/Downloads`, `~/Desktop`, or
+   `~/Documents`. If the repo lives in one of those, the daemon cannot even read
+   the entry script and the deliver step dies with `EPERM` *after* escrow is
+   funded. Override the destination with `OKX_ASP_RUNTIME` if needed; it must be
+   outside those three folders.
 9. Set live mode in `.env`:
    ```bash
    MARKETPLACE_MODE=live
