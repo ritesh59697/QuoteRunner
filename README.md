@@ -1,197 +1,121 @@
 # Quote Runner
 
-Meta-agent for OKX.AI Genesis Hackathon. User describes a task in plain language →
-Quote Runner posts it to the OKX.AI Task Marketplace → collects bids from live
-Agent Service Providers → ranks them with a transparent scoring formula → user
-approves → escrow funds via OKX Agent Payment Protocol.
+Quote Runner is a meta-agent for the OKX.AI Genesis Hackathon. It turns a plain
+English task into a structured marketplace request, finds matching Agent Service
+Providers, ranks quotes by price, reputation, and delivery speed, then lets the
+user approve one provider and fund escrow through the OKX Agent Payment Protocol.
 
-## What's real vs. stubbed right now
+The goal is simple: make hiring agents feel less like browsing a raw marketplace
+and more like asking a trusted procurement desk to compare options for you.
 
-| Piece | Status |
-|---|---|
-| Task parser (plain text → structured JSON) | **Real.** Calls Groq (Llama 3.1) directly. |
-| Bid scoring engine (price/reputation/speed weighting + explanation) | **Real.** Pure logic, no external dependency, fully tested. |
-| Marketplace client — mock mode | **Real & working.** Generates realistic simulated bids so you can build/demo the full loop today. |
-| Marketplace client — live mode | **Confirmed integration path, not yet field-tested.** OKX.AI's Task Marketplace is NOT a plain REST API — it's driven through the `onchainos` CLI (source: `github.com/okx/onchainos-skills`, `skills/okx-ai/references/task-cli-reference.md`). `lib/marketplaceClient.js` now shells out to the real commands: `agent asp-match` (discovery/"bid" collection), `agent create-task` + `agent confirm-accept` (publish + fund escrow). Argument names and the create-task flow are confirmed from the docs; the exact JSON field casing in `asp-match`'s response, and whether it returns agent reputation, are **not yet confirmed** — flagged with TODOs in the code. |
-| Escrow / Agent Payment Protocol | Real command sequence (`create-task` → `confirm-accept`), not yet run against a live task. |
-
-## Important architecture note
-
-`asp-match` is a **discovery/quote query** against already-listed ASP services — it returns matching services and their fee, not an open auction where independent agents place competing bids in real time. Your demo narrative ("Quote Runner collects live bids and ranks them") still holds — the ranking/scoring logic is real and is your differentiation — but internally it's closer to "smart quote comparison across matched providers" than a live auction. Worth knowing so you don't overstate the mechanism if a judge asks a technical question.
-
-## Run it
+## Demo
 
 ```bash
 npm install
 cp .env.example .env
-# edit .env and add your GROQ_API_KEY
+# Add GROQ_API_KEY to .env
 npm start
 ```
 
-Then open `http://localhost:3000`.
+Open `http://localhost:3000`.
 
-By default `MARKETPLACE_MODE=mock` in `.env` — this means task posting/bidding/escrow
-all run against realistic simulated data, no OKX credentials needed. This is what you
-should demo-test with right now.
+The default `MARKETPLACE_MODE=mock` runs the full product flow without OKX
+credentials: task parsing, quote generation, quote ranking, approval, and mock
+escrow confirmation. This is the safest mode for a local judge/demo run.
 
-## Switching to live OKX.AI
+## What It Does
 
-1. Get `OKX_API_KEY` / `OKX_SECRET_KEY` / `OKX_PASSPHRASE` from the OKX Developer Portal.
-2. In this project directory, run: `npx skills add okx/onchainos-skills`
-3. Install the `onchainos` CLI binary — see `web3.okx.com/onchainos/dev-docs`
-   (the skills-add step installs skill markdown for agent context; the CLI
-   binary itself is a separate install).
-4. Register a User-role agent identity (one-time): `onchainos agent create --role user`
-   — this gives you an agent ID. Put it in `.env` as `OKX_AGENT_ID`.
-   Your ASP-role agent ID goes in `OKX_ASP_AGENT_ID`.
-   `OKX_ASP_SERVICE_FEE_USDT` must match the fee on your real listing —
-   check it with `onchainos agent service-list --agent-id <ASP id>`. Service
-   `31684` is listed at **0.01 USDT**, so a value of `0` here advertises a
-   price the marketplace does not agree with.
-5. **Install and start the A2A daemon — required to receive any job:**
-   ```bash
-   npm install -g @okxweb3/a2a-node@latest   # needs Node >= 22.14.0
-   okx-a2a doctor --fix                      # binds AI provider, starts daemon, refreshes agents
-   ```
-   > ⚠️ Run `doctor --fix` **from the AI CLI you want bound, and only for
-   > first-time setup.** It binds the provider to whichever runtime calls it.
-   > Re-running it later from a different tool silently rebinds the provider to
-   > that tool — if that tool's login is expired, every inbound invite is then
-   > received and dropped. Doctor's `✗ default provider X does not match the
-   > detected runtime Y` is a **false alarm** when a bound, working provider is
-   > already set; ignore it. The check that matters is `AI provider CLI: … is
-   > logged in`, and doctor reports that from stale credentials, so confirm it
-   > for real (e.g. `codex exec "say hi"`).
-   Inbound job invites are delivered as system events over this daemon. Without
-   it your ASP receives nothing — and, crucially, **still reports itself online**,
-   because heartbeat is a separate path. If `okx-a2a` is not on your `PATH`
-   (npm's global prefix often isn't), set `OKX_A2A_BIN` in `.env`.
-6. **Start the provider watchdog (strongly recommended for live/review):**
-   ```bash
-   npm run watchdog        # runs independently of the web server
-   ```
-   The daemon drives the apply/deliver playbook through ONE AI CLI. If that CLI
-   dies mid-job (expired login, exhausted quota) the invite is silently dropped
-   and escrow strands. The watchdog tails the daemon log and, on a provider-level
-   failure, fails over to the next working provider in `OKX_PROVIDER_PRIORITY`
-   (default `claude,codex,hermes`; keep a free/local one last). Check any time
-   with `npm run provider:check`.
-7. **Wire real deliverables into the ASP AI:**
-   ```bash
-   npm run install-asp     # writes SKILL.md/CLAUDE.md into the daemon workspace
-   ```
-   When a job is accepted, the daemon asks its AI runtime to produce the
-   deliverable. Left alone it **improvises** — inventing providers and even the
-   budget (observed: it delivered made-up agents and a "~20 USDT" budget for a
-   0.01 USDT task). This step drops instructions into the daemon workspace
-   (`~/.okx-agent-task/workspace`) telling the AI to instead run
-   `scripts/rank-for-job.js <jobId>` and deliver its output verbatim — your real
-   `asp-match` → `scoringEngine` ranking with the correct on-chain budget. Re-run
-   if you move the repo. Preview any job's deliverable with `npm run rank <jobId>`.
-8. Set `MARKETPLACE_MODE=live` in `.env`.
-9. **Before trusting it for a demo**, run the verification checklist below —
-   the exact JSON shape `asp-match` returns hasn't been field-tested yet by
-   either of us, and the parsing in `marketplaceClient.js` has fallback field
-   names (`m.Price || m.price || m.feeAmount`) but may still need adjustment
-   once you see real output.
+1. The user describes work in natural language.
+2. Groq/Llama parses the request into structured task data.
+3. Quote Runner asks the marketplace for matching providers.
+4. The scoring engine ranks providers with a transparent formula.
+5. The user reviews the explanation and approves the best quote.
+6. Escrow is funded for the selected provider.
 
-**Important for demo day:** `asp-match` only surfaces ASPs that have already
-listed a matching service — if the marketplace is thin in your task's category,
-results may be sparse. Check a few days before recording; you may want a
-backup category/task phrasing that's more likely to have listed services.
+## Why It Matters
 
-## How to check if this project is actually working
+Agent marketplaces can become noisy fast: many providers, inconsistent pricing,
+unclear reputation signals, and payment flow friction. Quote Runner adds a
+decision layer on top of the marketplace so users can compare providers quickly
+and understand why a recommendation was made before committing funds.
 
-Go through these in order — each one isolates a different layer, so if
-something breaks you'll know exactly where.
+## OKX.AI Integration
 
-1. **Install & mock-mode smoke test**
-   ```bash
-   npm install
-   cp .env.example .env   # add your real GROQ_API_KEY
-   npm start
-   ```
-   Open `http://localhost:3000`. Type a task, hit "Post to Marketplace."
-   You should see: a parsed task ledger → 3-5 ranked mock bids appear with a
-   staggered animation → an explanation line → an "Approve" button that,
-   when clicked, shows an escrow-funded confirmation with a mock tx id.
-   If this doesn't work, the problem is either your Groq key (check
-   `GET /api/status` shows `groq_configured: true`) or something broke in
-   `server.js`/`public/index.html` — check the browser console and terminal
-   output for the actual error.
+Quote Runner integrates with OKX.AI through the `onchainos` CLI path used by the
+Task Marketplace:
 
-2. **Confirm the Groq call independently**
-   ```bash
-   curl https://api.groq.com/openai/v1/chat/completions \
-     -H "Authorization: Bearer $GROQ_API_KEY" -H "Content-Type: application/json" \
-     -d '{"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":"say hi"}]}'
-   ```
-   If this fails, it's a Groq account/key issue, not this app.
+- `agent asp-match` for service discovery / quote collection.
+- `agent create-task` to publish a task.
+- `agent confirm-accept` to accept a provider and fund escrow.
+- `okx-a2a` daemon support for receiving ASP job invites.
+- A provider watchdog to fail over between AI runtimes if the bound provider
+  becomes unavailable.
 
-3. **CLI install sanity check (before touching this app's live mode)**
-   ```bash
-   npx skills add okx/onchainos-skills
-   onchainos --version
-   onchainos agent create --role user
-   ```
-   Do this in isolation first. If `onchainos agent create` fails or hangs,
-   fix that before wiring `MARKETPLACE_MODE=live` — the app can't work around
-   a broken CLI install.
+Live mode is implemented in `lib/marketplaceClient.js`, but it still needs a
+small real-marketplace verification pass before being used as the primary demo
+path. The mock mode exists so the product can be reviewed even without funded
+OKX credentials.
 
-4. **Raw asp-match test (confirms the real response shape)**
-   ```bash
-   onchainos agent asp-match --task-desc "design a logo for a coffee brand" \
-     --agent-id <your OKX_AGENT_ID> --format json
-   ```
-   Read the actual JSON keys returned. Compare against the field-name
-   fallbacks in `postTaskAndCollectBids()` in `lib/marketplaceClient.js`
-   (`m.Price || m.price || m.feeAmount`, etc.) — adjust if the real keys
-   differ. This is the single most likely place something needs a small fix.
+For full live setup and verification steps, see
+[`docs/LIVE_OKX_SETUP.md`](docs/LIVE_OKX_SETUP.md).
 
-5. **Live-mode end-to-end test in the app**
-   Set `MARKETPLACE_MODE=live`, restart (`npm start`), repeat step 1's flow.
-   Watch the terminal — `runOnchainos()` errors print the exact failing
-   command and stderr, which tells you immediately whether it's an auth
-   issue, a missing agent ID, or a bad argument name.
+## Current Implementation
 
-6. **Small real-money dry run before demo day**
-   Use a tiny budget (e.g. 1 USDT) for your first live `create-task` +
-   `confirm-accept` — confirm escrow actually funds and you can see the task
-   in `onchainos agent tasks` — before trusting it live on camera.
+| Component | Status |
+| --- | --- |
+| Task parser | Real Groq/Llama call from plain text to structured JSON. |
+| Quote ranking | Real deterministic scoring logic in `lib/scoringEngine.js`. |
+| Mock marketplace | Working end-to-end demo path with simulated providers and escrow. |
+| Live marketplace | Implemented through `onchainos`; needs final field-test against live output. |
+| Escrow flow | Implemented as `create-task` -> `confirm-accept`; mock mode is demo-safe. |
+| ASP delivery support | Includes A2A readiness checks, provider failover, and ASP workspace installer. |
 
-## Project structure
+## Project Structure
 
-```
+```text
 quote-runner/
-├── server.js                 # Express API (parse -> post -> rank -> approve)
-├── lib/
-│   ├── taskParser.js         # Groq LLM call: plain text -> structured task JSON
-│   ├── marketplaceClient.js  # OKX.AI integration (mock + live-stub)
-│   ├── a2aClient.js          # A2A daemon readiness — can we receive job invites at all?
-│   └── scoringEngine.js      # Bid ranking + plain-language explanation (your product IP)
-├── public/
-│   └── index.html            # UI - single file, no build step
-└── .env.example
+|-- server.js                    # Express API and demo server
+|-- lib/
+|   |-- taskParser.js            # Groq task parsing
+|   |-- marketplaceClient.js     # Mock + live OKX.AI marketplace integration
+|   |-- scoringEngine.js         # Quote ranking and explanation logic
+|   |-- a2aClient.js             # A2A daemon readiness checks
+|   |-- providerFallback.js      # AI-provider failover support
+|   `-- deliverableBuilder.js    # ASP deliverable formatting
+|-- public/
+|   |-- index.html               # Landing page
+|   `-- app.html                 # Quote Runner desk UI
+|-- scripts/
+|   |-- install-asp-workspace.js # Writes ASP runtime instructions
+|   |-- provider-watchdog.js     # Watches/fails over provider dispatch
+|   `-- rank-for-job.js          # Builds ASP ranking deliverable for a job
+|-- docs/
+|   `-- LIVE_OKX_SETUP.md        # Live OKX.AI setup and verification notes
+`-- .env.example
 ```
 
-## API endpoints
+## API
 
-- `GET /api/status` — sanity check (marketplace mode, whether Groq key is set)
-- `POST /api/tasks` — `{ input: "plain language task" }` → parses, posts, ranks bids
-- `POST /api/tasks/:taskId/approve` — `{ bidId }` → approves + funds escrow
-- `GET /api/tasks/:taskId` — fetch current task state
+- `GET /api/status` - app, credential, wallet, and A2A readiness status.
+- `GET /api/funding?amount=1` - XLayer USDT funding preflight in live mode.
+- `POST /api/tasks` - parse a plain-language request, collect quotes, rank them.
+- `POST /api/tasks/:taskId/approve` - approve a quote and fund escrow.
+- `GET /api/tasks/:taskId` - fetch the current in-memory task state.
 
-## What to build next (priority order for your remaining time)
+## Known Limitations
 
-1. **Run the verification checklist above, steps 3-5** — install the CLI,
-   register your agent identity, and run one raw `asp-match` call to confirm
-   the real JSON field names. This is the single highest-risk remaining unknown.
-2. **Reputation lookup** — `asp-match` doesn't appear to return it; find the
-   right `agent get-agents` / reputation call and wire it into the scoring
-   engine's live-mode path (currently defaults to a neutral 4.0).
-3. **Multi-round negotiation** (nice-to-have from the original scope) — have
-   Quote Runner counter a bid on the user's behalf.
-4. **Preference memory** — reorder future rankings based on past accepted bids,
-   for the "concierge that knows you" narrative in your demo script.
-5. Record the 90-second demo once live mode is confirmed working, or fall back
-   to a clearly-labeled mock-mode demo if OKX API access isn't finalized in time.
+- Live marketplace mode depends on the local `onchainos` and `okx-a2a` setup.
+- `asp-match` behaves like service discovery over listed ASP services, not an
+  open real-time auction. Quote Runner's ranking is real, but the source quotes
+  are matched provider listings.
+- The exact live `asp-match` JSON response shape should be verified once with a
+  funded/registered OKX.AI environment before recording a live demo.
+- Reputation data may need a separate lookup if `asp-match` does not return it;
+  the live path currently falls back to neutral values when needed.
+
+## Next Steps
+
+- Field-test one live `asp-match` response and tighten any field mappings.
+- Add explicit automated tests for the scoring engine.
+- Add provider preference memory based on previously accepted quotes.
+- Add negotiation/counter-offer support for multi-round provider selection.
