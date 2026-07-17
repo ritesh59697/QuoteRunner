@@ -537,6 +537,17 @@
       box-shadow: 0 0 0 1px rgba(109, 94, 252, 0.15);
     }
 
+    /* Recedes rather than hides: these were discovered and are still selectable,
+       so the buyer can see everything and overrule the scope call. */
+    .bid.out-of-scope {
+      opacity: 0.5;
+    }
+
+    .bid.out-of-scope:hover,
+    .bid.out-of-scope.selected {
+      opacity: 1;
+    }
+
     .bid-rank {
       width: 40px;
       height: 40px;
@@ -580,6 +591,11 @@
       border-radius: 999px;
       background: var(--purple-soft);
       color: var(--purple);
+    }
+
+    .badge-muted {
+      background: rgba(107, 107, 107, 0.1);
+      color: var(--muted);
     }
 
     .bid-meta {
@@ -1084,7 +1100,12 @@
 
         currentTaskId = data.task_id;
         currentBids = data.bids || [];
-        recommendedBidId = data.recommended_bid_id || (currentBids[0] && currentBids[0].bid_id) || null;
+        // No `|| currentBids[0]` fallback: the server leaves recommended_bid_id
+        // null when nothing discovered can actually do the task, and defaulting
+        // to the top row would preselect — and pre-approve — the very bid the
+        // scope filter just ruled out. Null means "nothing to recommend", and
+        // updateSelectionUI disables Approve until the user picks deliberately.
+        recommendedBidId = data.recommended_bid_id || null;
         selectedBidId = recommendedBidId;
         $('bidSection').style.display = 'block';
         renderBids(currentBids, recommendedBidId);
@@ -1136,22 +1157,31 @@
       bids.forEach((bid, i) => {
         const isRec = bid.bid_id === recommendedId;
         const isSel = bid.bid_id === selectedBidId;
-        const scorePct = Math.round((bid.score || 0) * 100);
+        // Out-of-scope bids are shown so the buyer sees everything discovered and
+        // can overrule us, but they carry no score: they were disqualified on
+        // capability, not out-pointed on price. A score bar next to "can't do
+        // this task" reads as an endorsement.
+        const scorePct = bid.off_scope ? 0 : Math.round((bid.score || 0) * 100);
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'bid' + (isRec ? ' recommended' : '') + (isSel ? ' selected' : '');
+        btn.className =
+          'bid' + (isRec ? ' recommended' : '') + (isSel ? ' selected' : '') +
+          (bid.off_scope ? ' out-of-scope' : '');
         btn.innerHTML = `
         <div class="bid-rank">${i + 1}</div>
         <div class="bid-body">
           <div class="bid-name-row">
             <span class="bid-name">${escapeHtml(bid.agent_name)}</span>
             ${isRec ? '<span class="badge">Recommended</span>' : ''}
+            ${bid.off_scope ? '<span class="badge badge-muted">Out of scope</span>' : ''}
           </div>
           <div class="bid-meta">
             <span><strong>${escapeHtml(String(bid.reputation))}★</strong> reputation</span>
-            <span><strong>${scorePct}</strong> score</span>
+            ${bid.off_scope
+              ? `<span>${escapeHtml(bid.scope_reason || 'different kind of service')}</span>`
+              : `<span><strong>${scorePct}</strong> score</span>`}
           </div>
-          <div class="score-track"><div class="score-fill" style="width:${scorePct}%"></div></div>
+          ${bid.off_scope ? '' : `<div class="score-track"><div class="score-fill" style="width:${scorePct}%"></div></div>`}
         </div>
         <div class="bid-price">
           <div class="amount">${escapeHtml(String(bid.price_usdt))} USDT</div>

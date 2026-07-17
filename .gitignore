@@ -22,3 +22,6 @@ Thumbs.db
 # These are pasted chat images — they can contain private conversations and
 # credentials, and this is a public repo. Never commit them.
 .hermes/
+
+# Local agent working notes — kept out of the public repo by choice.
+CLAUDE.md

@@ -15,6 +15,7 @@ const {
   MODE,
 } = require('./lib/marketplaceClient');
 const { rankBids, explainTopChoice } = require('./lib/scoringEngine');
+const { judgeBids } = require('./lib/relevance');
 const { getA2aReadiness } = require('./lib/a2aClient');
 const { ensureWorkingProvider } = require('./lib/providerFallback');
 
@@ -102,17 +103,28 @@ app.post('/api/tasks', async (req, res) => {
     }
 
     const { task_id, bids } = await postTaskAndCollectBids(task);
-    const ranked = rankBids(task, bids);
+    // asp-match returns plausible neighbours, not capability matches, and the
+    // score only sees price/stars/ETA — on which the wrong kind of service
+    // routinely wins. Judge scope before ranking. Groq is already required above
+    // by parseTask, so this adds no dependency this route didn't already have.
+    const judged = await judgeBids(task, bids);
+    const ranked = rankBids(task, judged);
     const explanation = explainTopChoice(ranked, task);
 
     const localRefId = task_id || `local_${Date.now()}`;
     tasks.set(localRefId, { task, bids: ranked, status: 'bidding_complete' });
 
+    // The recommendation is the best bid that can actually do the job — not
+    // ranked[0], which is only the least-bad option when everything is off scope.
+    // Null is a real answer here ("nothing suitable was found"); the UI leaves
+    // Approve disabled rather than defaulting to the top row.
+    const recommended = ranked.find((b) => !b.off_scope) || null;
+
     let funding = null;
-    if (MODE === 'live' && ranked[0]) {
+    if (MODE === 'live' && recommended) {
       try {
         funding = await getWalletFundingStatus({
-          requiredUsdt: Number(ranked[0].price_usdt) || 0,
+          requiredUsdt: Number(recommended.price_usdt) || 0,
         });
       } catch (_) {
         /* non-fatal for quote view */
@@ -123,7 +135,7 @@ app.post('/api/tasks', async (req, res) => {
       task_id: localRefId,
       task,
       bids: ranked,
-      recommended_bid_id: ranked[0]?.bid_id || null,
+      recommended_bid_id: recommended?.bid_id || null,
       explanation,
       funding,
     });

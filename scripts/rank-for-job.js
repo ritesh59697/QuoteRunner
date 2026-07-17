@@ -158,15 +158,17 @@ async function main() {
       `(our fee for this job: ${job.ourFeeUsdt} USDT)`
   );
 
-  const { markdown, ranked, candidateCount } = await buildDeliverable(task);
+  const { markdown, ranked, candidateCount, inScopeCount } = await buildDeliverable(task);
 
   // Print the deliverable so the caller (AI runtime or a human) can use it.
   process.stdout.write(markdown + '\n');
 
+  console.error(
+    `[rank-for-job] ${candidateCount} provider(s) discovered, ${inScopeCount} able to do this task.`
+  );
+
   if (!doDeliver) {
-    console.error(
-      `\n[rank-for-job] ${candidateCount} provider(s) ranked. Not delivered (no --deliver).`
-    );
+    console.error('[rank-for-job] Not delivered (no --deliver).');
     return;
   }
 
