@@ -26,6 +26,7 @@ const {
   isProviderFailureLine,
   extractFailedProvider,
 } = require('../lib/providerFallback');
+const { recoverStuckJobs } = require('../lib/stuckJobRecovery');
 
 const LOG_PATH =
   process.env.OKX_A2A_LOG ||
@@ -35,6 +36,10 @@ const POLL_MS = Number(process.env.OKX_WATCHDOG_POLL_MS || 5000);
 // After a failover, ignore further failures for this long so one burst of
 // failed dispatches doesn't trigger repeated switches.
 const COOLDOWN_MS = Number(process.env.OKX_WATCHDOG_COOLDOWN_MS || 120000);
+// Independent of failover events: catches jobs stuck by a failure this
+// process didn't witness (e.g. the watchdog itself was down when it happened
+// — the exact gap that let 0xe51506 and 0x82d5e8 rot unnoticed).
+const RECOVERY_SWEEP_MS = Number(process.env.OKX_RECOVERY_SWEEP_MS || 5 * 60 * 1000);
 
 let lastSize = 0;
 let lastFailoverAt = 0;
@@ -67,6 +72,29 @@ async function onProviderFailure(suspectProvider, line) {
     log('failover error:', err.message);
   } finally {
     running = false;
+  }
+  // Rebinding a job's provider only takes effect on its NEXT dispatch, and
+  // job_asp_selected fires exactly once — so a job whose one dispatch died
+  // during this failure never gets a second chance on its own. Run every
+  // time, success or not: even if the failover itself errored, any job stuck
+  // from an earlier, already-completed failover is still worth sweeping.
+  await runRecoverySweep('post-failover');
+}
+
+let sweepRunning = false;
+async function runRecoverySweep(trigger) {
+  if (sweepRunning) return;
+  sweepRunning = true;
+  try {
+    const results = await recoverStuckJobs();
+    for (const r of results) {
+      if (r.action === 'skipped') continue; // routine — not worth a log line
+      log(`recovery (${trigger}) job=${r.jobId} action=${r.action}` + (r.reason ? ` reason=${r.reason}` : '') + (r.txHash ? ` tx=${r.txHash}` : ''));
+    }
+  } catch (err) {
+    log('recovery sweep error:', err.message);
+  } finally {
+    sweepRunning = false;
   }
 }
 
@@ -107,10 +135,18 @@ async function main() {
   // Verify a provider is up front, before any job arrives.
   const boot = await ensureWorkingProvider();
   log('startup check:', boot.message || boot.action);
+  // Covers jobs stuck by a failure that happened before this process started
+  // (this watchdog is not itself supervised — nothing restarts it if it dies,
+  // so there is always a window where a failure could go undetected).
+  await runRecoverySweep('startup');
 
   setInterval(() => {
     poll().catch((e) => log('poll error:', e.message));
   }, POLL_MS);
+
+  setInterval(() => {
+    runRecoverySweep('periodic').catch((e) => log('sweep error:', e.message));
+  }, RECOVERY_SWEEP_MS);
 }
 
 main();
