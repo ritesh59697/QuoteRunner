@@ -9,6 +9,7 @@
     "dev": "node server.js",
     "test": "node --test test/*.test.js",
     "watchdog": "node scripts/provider-watchdog.js",
+    "recover-stuck-jobs": "node scripts/recover-stuck-jobs.js",
     "provider:check": "node -e \"require('dotenv').config();require('./lib/providerFallback').ensureWorkingProvider().then(r=>console.log(r.message||r.action))\"",
     "install-asp": "node scripts/install-asp-workspace.js",
     "rank": "node scripts/rank-for-job.js",
