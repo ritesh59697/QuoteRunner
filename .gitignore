@@ -25,3 +25,9 @@ Thumbs.db
 
 # Local agent working notes — kept out of the public repo by choice.
 CLAUDE.md
+
+# Raw log exports the daemon's AI session generates on request (e.g. "export
+# a log for job X"). These carry the deliverable's raw decryption
+# secret/salt/nonce in plaintext — never belongs in a public repo. Use
+# docs/job-<id>-delivery-evidence.md for a redacted, shareable writeup instead.
+job_*_export_logs.txt
