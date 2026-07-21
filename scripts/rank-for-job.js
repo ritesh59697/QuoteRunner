@@ -20,6 +20,8 @@
 // dotenv.config() silently finds nothing, MARKETPLACE_MODE falls back to
 // 'mock', and this script cheerfully prints fabricated MOCK_AGENT_POOL
 // providers that the AI then delivers on-chain as a real ranking.
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { execFile } = require('child_process');
@@ -34,6 +36,7 @@ const ASP_AGENT_ID = process.env.OKX_ASP_AGENT_ID || '4814';
 function cliEnv() {
   return {
     ...process.env,
+    PATH: `/Users/ritesh/.hermes/node/bin:${process.env.PATH || ''}`,
     OKX_API_KEY: process.env.OKX_API_KEY,
     OKX_SECRET_KEY: process.env.OKX_SECRET_KEY,
     OKX_PASSPHRASE: process.env.OKX_PASSPHRASE,
@@ -184,13 +187,85 @@ async function main() {
     process.exit(1);
   }
 
+  const deliverablePath = path.join(os.tmpdir(), `deliverable_${jobId}.md`);
+  fs.writeFileSync(deliverablePath, markdown, 'utf8');
+
+  // Step 1: Attach deliverable to task as a fallback for list-attachments before deliver (must happen while status is 'accepted')
+  try {
+    console.error(`[rank-for-job] Attaching deliverable file to task ${jobId} via task-attach...`);
+    await onchainos(['agent', 'task-attach', '--file', deliverablePath, jobId]);
+    console.error(`[rank-for-job] Successfully attached ${deliverablePath} to task ${jobId}.`);
+  } catch (err) {
+    console.error(`[rank-for-job] Warning: task-attach fallback failed: ${err.message}`);
+  }
+
+  // Step 2: Deliver the deliverable on-chain
   await onchainos([
     'agent', 'deliver', jobId,
     '--agent-id', ASP_AGENT_ID,
+    '--file', deliverablePath,
     '--message', 'Quote Runner ranking complete — see deliverable.',
-    '--deliverable-text', markdown,
   ]);
   console.error(`\n[rank-for-job] Delivered real ranking for ${jobId}.`);
+
+  // Step 3: Extract keys and transmit XMTP deliverable payload to buyer agent
+  try {
+    const xmtpMsg = await getXmtpDeliverMessage(jobId);
+    if (xmtpMsg) {
+      console.error(`[rank-for-job] Extracted delivery keys. Transmitting XMTP deliverable payload to buyer agent...`);
+      const okxA2aBin = process.env.OKX_A2A_BIN || '/Users/ritesh/.hermes/node/bin/okx-a2a';
+      const buyerAgentId = task.buyerAgentId || '1757';
+      try {
+        await execFileAsync(okxA2aBin, [
+          'xmtp-send',
+          '--job-id', jobId,
+          '--to-agent-id', buyerAgentId,
+          '--message', xmtpMsg,
+        ], { env: cliEnv() });
+        console.error(`[rank-for-job] XMTP deliverable payload transmitted to buyer agent ${buyerAgentId}.`);
+      } catch (xmtpErr) {
+        console.error(`[rank-for-job] Warning: xmtp-send failed: ${xmtpErr.message}`);
+      }
+
+      await execFileAsync(okxA2aBin, [
+        'user', 'notify',
+        '--job-id', jobId,
+        '--content', xmtpMsg,
+      ], { env: cliEnv() });
+      console.error(`[rank-for-job] Backend notification published successfully.`);
+    } else {
+      console.error(`[rank-for-job] Warning: Could not find queued XMTP message for job ${jobId} in SQLite DB.`);
+    }
+  } catch (err) {
+    console.error(`[rank-for-job] Warning: Failed to publish delivery payload: ${err.message}`);
+  }
+}
+
+/**
+ * Query the daemon SQLite DB to extract the generated delivery keys payload.
+ */
+async function getXmtpDeliverMessage(jobId) {
+  const dbPath = path.join(
+    process.env.HOME || '/Users/ritesh',
+    '.okx-agent-task',
+    'sqlite',
+    'command-store.sqlite'
+  );
+  // Order by ID desc to make sure we get the latest message for this jobId
+  const query = `SELECT command_json FROM command_queue WHERE command_json LIKE '%${jobId}%' AND type='xmtp-send' ORDER BY id DESC LIMIT 1;`;
+  
+  try {
+    const { stdout } = await execFileAsync('sqlite3', [dbPath, query]);
+    const trimmed = stdout.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const parsed = JSON.parse(trimmed);
+    return parsed.message || null;
+  } catch (err) {
+    console.error(`[rank-for-job] Warning: Failed to query command-store sqlite: ${err.message}`);
+    return null;
+  }
 }
 
 main().catch((err) => {
