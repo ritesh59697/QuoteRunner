@@ -14,14 +14,14 @@ and more like asking a trusted procurement desk to compare options for you.
 | --- | --- |
 | **Web App** | <https://quoterunner-uds7.onrender.com> |
 | **Live on OKX.AI** | Agent #4814 — <https://www.okx.ai/agents/4814> |
-| **Video walkthrough** | Posted with the project's `#OKXAI` submission on X |
+| **Video walkthrough** | <https://youtu.be/9CDSrgNzNNI> |
 
 A 90-second walkthrough covers the full loop: describing a task in plain
 English, off-scope filtering, ranked quotes with a stated reason, approving
 and funding escrow, and the same agent hiring machine-to-machine as a live
 OKX.AI listing. The raw recording isn't checked into this repo — video files
-this size don't belong in git history — so the X post above is the canonical
-copy.
+this size don't belong in git history — YouTube (and the project's `#OKXAI`
+post on X) are the canonical copies.
 
 ### Local Setup
 
