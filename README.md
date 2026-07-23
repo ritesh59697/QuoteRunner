@@ -10,18 +10,18 @@ and more like asking a trusted procurement desk to compare options for you.
 
 ## Demo
 
-- **Hosted backend**: <https://quoterunner-uds7.onrender.com/>
-- **Demo Video Walkthrough**: [public/quote-runner.mp4](public/quote-runner.mp4)
+| | |
+| --- | --- |
+| **Web App** | <https://quoterunner-uds7.onrender.com> |
+| **Live on OKX.AI** | Agent #4814 — <https://www.okx.ai/agents/4814> |
+| **Video walkthrough** | Posted with the project's `#OKXAI` submission on X |
 
-### 📹 90-Second Demo Video Transcript
-
-For quick review, here is the voiceover transcript of the 90-second hackathon demo:
-
-* **0:00 – 0:15 (The Hook)**: *"Finding the right AI agent service provider on a decentralized marketplace is hard. Quote Runner is an autonomous meta-agent that interprets plain-language briefs, matches OKX.AI providers, and ranks quotes transparently."*
-* **0:15 – 0:35 (Web Desk & Ranking)**: *"On our Web Procurement Desk, enter any task in plain English—like 'Logo design for coffee brand under 20 USDT in 2 days'. Quote Runner automatically filters out out-of-scope agents and ranks candidate quotes using multi-factor scoring across price, reputation, and speed."*
-* **0:35 – 0:55 (Escrow Approval)**: *"Once you select the top-ranked quote, escrow is approved and funded in one seamless mock-mode flow, simulating the OKX Agent Payment Protocol."*
-* **0:55 – 1:15 (Live OKX.AI Listing)**: *"In addition to our web app, Quote Runner is live and listed on OKX.AI as Agent #4814. Other AI agents in the network can hire Quote Runner directly machine-to-machine via OKX's A2A protocol."*
-* **1:15 – 1:30 (Deliverable & On-Chain Settlement)**: *"When hired, Quote Runner autonomously runs the ranking pipeline, submits a structured deliverable report on-chain via XMTP, and settles the job. Try Quote Runner on the web or hire Agent #4814 on OKX.AI!"*
+A 90-second walkthrough covers the full loop: describing a task in plain
+English, off-scope filtering, ranked quotes with a stated reason, approving
+and funding escrow, and the same agent hiring machine-to-machine as a live
+OKX.AI listing. The raw recording isn't checked into this repo — video files
+this size don't belong in git history — so the X post above is the canonical
+copy.
 
 ### Local Setup
 
@@ -81,7 +81,7 @@ For full live setup and verification steps, see
 | Task parser | Real Groq/Llama call from plain text to structured JSON. |
 | Quote ranking | Real deterministic scoring logic in `lib/scoringEngine.js`. |
 | Mock marketplace | Working end-to-end demo path with simulated providers and escrow. |
-| Live marketplace | Implemented through `onchainos`; needs final field-test against live output. |
+| Live marketplace | Implemented through `onchainos`; field-tested end-to-end (apply → accept → deliver) against live jobs. |
 | Escrow flow | Implemented as `create-task` -> `confirm-accept`; mock mode is demo-safe. |
 | ASP delivery support | Includes A2A readiness checks, provider failover, and ASP workspace installer. |
 
@@ -89,23 +89,28 @@ For full live setup and verification steps, see
 
 ```text
 quote-runner/
-|-- server.js                    # Express API and demo server
+|-- server.js                     # Express API and demo server
 |-- lib/
-|   |-- taskParser.js            # Groq task parsing
-|   |-- marketplaceClient.js     # Mock + live OKX.AI marketplace integration
-|   |-- scoringEngine.js         # Quote ranking and explanation logic
-|   |-- a2aClient.js             # A2A daemon readiness checks
-|   |-- providerFallback.js      # AI-provider failover support
-|   `-- deliverableBuilder.js    # ASP deliverable formatting
+|   |-- taskParser.js             # Groq task parsing
+|   |-- marketplaceClient.js      # Mock + live OKX.AI marketplace integration
+|   |-- scoringEngine.js          # Quote ranking and explanation logic
+|   |-- relevance.js              # Capability/off-scope filtering (a hard gate, not a weight)
+|   |-- a2aClient.js              # A2A daemon readiness checks
+|   |-- providerFallback.js       # AI-provider failover support
+|   |-- stuckJobRecovery.js       # Re-applies to jobs stranded by a dropped provider
+|   `-- deliverableBuilder.js     # ASP deliverable formatting
 |-- public/
-|   |-- index.html               # Landing page
-|   `-- app.html                 # Quote Runner desk UI
+|   |-- index.html                # Landing page
+|   `-- app.html                  # Quote Runner desk UI
 |-- scripts/
-|   |-- install-asp-workspace.js # Writes ASP runtime instructions
-|   |-- provider-watchdog.js     # Watches/fails over provider dispatch
-|   `-- rank-for-job.js          # Builds ASP ranking deliverable for a job
+|   |-- install-asp-workspace.js  # Syncs lib/scripts + writes ASP runtime instructions
+|   |-- provider-watchdog.js      # Watches/fails over provider dispatch
+|   |-- recover-stuck-jobs.js     # CLI sweep for stranded jobs (--dry-run supported)
+|   |-- rank-for-job.js           # Builds ASP ranking deliverable for a job
+|   `-- self-test.js              # End-to-end marketplace test (needs a second wallet)
+|-- test/                         # Scoring + recovery invariants (pure, no network)
 |-- docs/
-|   `-- LIVE_OKX_SETUP.md        # Live OKX.AI setup and verification notes
+|   `-- LIVE_OKX_SETUP.md         # Live OKX.AI setup and verification notes
 `-- .env.example
 ```
 
@@ -122,15 +127,16 @@ quote-runner/
 - Live marketplace mode depends on the local `onchainos` and `okx-a2a` setup.
 - `asp-match` behaves like service discovery over listed ASP services, not an
   open real-time auction. Quote Runner's ranking is real, but the source quotes
-  are matched provider listings.
-- The exact live `asp-match` JSON response shape should be verified once with a
-  funded/registered OKX.AI environment before recording a live demo.
+  are matched provider listings, and relevance to the request varies — Quote
+  Runner filters out off-scope matches rather than ranking around them.
 - Reputation data may need a separate lookup if `asp-match` does not return it;
   the live path currently falls back to neutral values when needed.
+- The provider watchdog (`npm run watchdog`) is a foreground process; nothing
+  currently restarts it if it dies, so a runtime outage during that window
+  won't trigger failover.
 
 ## Next Steps
 
-- Field-test one live `asp-match` response and tighten any field mappings.
-- Add explicit automated tests for the scoring engine.
+- Supervise the provider watchdog so a crashed instance restarts on its own.
 - Add provider preference memory based on previously accepted quotes.
 - Add negotiation/counter-offer support for multi-round provider selection.

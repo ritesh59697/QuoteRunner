@@ -31,3 +31,9 @@ CLAUDE.md
 # secret/salt/nonce in plaintext — never belongs in a public repo. Use
 # docs/job-<id>-delivery-evidence.md for a redacted, shareable writeup instead.
 job_*_export_logs.txt
+
+# Raw demo screen recordings and their working captions. These regularly clear
+# GitHub's 100MB per-file hard limit and don't belong in git history — the
+# canonical copy of the demo video is the project's #OKXAI post on X.
+public/lv_*.mp4
+public/captions.srt
