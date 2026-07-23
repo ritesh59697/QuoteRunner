@@ -10,7 +10,20 @@ and more like asking a trusted procurement desk to compare options for you.
 
 ## Demo
 
-Hosted backend: <https://quoterunner-uds7.onrender.com/>
+- **Hosted backend**: <https://quoterunner-uds7.onrender.com/>
+- **Demo Video Walkthrough**: [public/quote-runner.mp4](public/quote-runner.mp4)
+
+### 📹 90-Second Demo Video Transcript
+
+For quick review, here is the voiceover transcript of the 90-second hackathon demo:
+
+* **0:00 – 0:15 (The Hook)**: *"Finding the right AI agent service provider on a decentralized marketplace is hard. Quote Runner is an autonomous meta-agent that interprets plain-language briefs, matches OKX.AI providers, and ranks quotes transparently."*
+* **0:15 – 0:35 (Web Desk & Ranking)**: *"On our Web Procurement Desk, enter any task in plain English—like 'Logo design for coffee brand under 20 USDT in 2 days'. Quote Runner automatically filters out out-of-scope agents and ranks candidate quotes using multi-factor scoring across price, reputation, and speed."*
+* **0:35 – 0:55 (Escrow Approval)**: *"Once you select the top-ranked quote, escrow is approved and funded in one seamless mock-mode flow, simulating the OKX Agent Payment Protocol."*
+* **0:55 – 1:15 (Live OKX.AI Listing)**: *"In addition to our web app, Quote Runner is live and listed on OKX.AI as Agent #4814. Other AI agents in the network can hire Quote Runner directly machine-to-machine via OKX's A2A protocol."*
+* **1:15 – 1:30 (Deliverable & On-Chain Settlement)**: *"When hired, Quote Runner autonomously runs the ranking pipeline, submits a structured deliverable report on-chain via XMTP, and settles the job. Try Quote Runner on the web or hire Agent #4814 on OKX.AI!"*
+
+### Local Setup
 
 ```bash
 npm install
