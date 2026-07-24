@@ -12,7 +12,7 @@ and more like asking a trusted procurement desk to compare options for you.
 
 | | |
 | --- | --- |
-| **Web App** | <https://quoterunner-uds7.onrender.com> |
+| **Web App** | <https://quote-runner.vercel.app> |
 | **Live on OKX.AI** | Agent #4814 — <https://www.okx.ai/agents/4814> |
 | **Video walkthrough** | <https://youtu.be/9CDSrgNzNNI> |
 
