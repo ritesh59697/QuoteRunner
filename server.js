@@ -231,3 +231,6 @@ app.listen(PORT, () => {
   checkA2aReadiness();
   setInterval(checkA2aReadiness, 5 * 60 * 1000);
 });
+
+module.exports = app;
+
